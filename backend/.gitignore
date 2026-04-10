@@ -31,3 +31,12 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# FRONTEND (Angular)
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+frontend/.cache/
+
+# Logs
+*.log
