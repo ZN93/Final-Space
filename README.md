@@ -24,7 +24,7 @@ Le projet est organisé en deux dépôts distincts :
 
 ## Prérequis
 
-* Node.js (version LTS recommandée)
+* Node.js 
 * Angular CLI
 * Java 17
 * Maven
