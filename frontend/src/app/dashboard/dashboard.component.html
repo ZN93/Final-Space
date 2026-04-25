@@ -1,17 +1,85 @@
-<div class="min-h-screen bg-slate-950 p-8 text-amber-100">
-  <div class="mx-auto max-w-5xl rounded-2xl border border-cyan-900 bg-teal-900/60 p-8">
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-2xl font-semibold">Dashboard protégé</h1>
-        <p class="mt-2 text-cyan-100">Vous êtes connecté à Final Space.</p>
-      </div>
+<div class="min-h-screen bg-slate-950 text-white p-8">
 
-      <button
-        class="rounded-lg bg-amber-500 px-4 py-2 font-semibold text-slate-950 hover:bg-orange-600"
-        (click)="logout()"
-      >
-        Déconnexion
-      </button>
+    <div class="flex justify-between items-center mb-8">
+
+        <div>
+            <h1 class="text-4xl font-bold">
+                Final Space Dashboard
+            </h1>
+
+            <p class="text-slate-400 mt-2">
+                Role : {{ role }}
+            </p>
+        </div>
+
+        <button
+                (click)="logout()"
+                class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg"
+        >
+            Logout
+        </button>
+
     </div>
-  </div>
+
+    <div class="grid grid-cols-3 gap-6">
+
+        <div class="bg-slate-900 p-6 rounded-2xl">
+            <h2 class="text-xl font-semibold">
+                Missions
+            </h2>
+
+            <button
+                    *ngIf="role === 'ADMIN' || role === 'OPERATEUR'"
+                    class="mt-4 rounded-lg bg-amber-500 px-4 py-2 font-semibold text-slate-950"
+            >
+                Créer une mission
+            </button>
+
+            <p *ngIf="role === 'LECTEUR'" class="mt-4 text-slate-400">
+                Mode lecture seule
+            </p>
+        </div>
+
+        <div class="bg-slate-900 p-6 rounded-2xl">
+            <h2 class="text-xl font-semibold">
+                Satellites
+            </h2>
+
+            <button
+                    *ngIf="role === 'ADMIN' || role === 'OPERATEUR'"
+                    class="mt-4 rounded-lg bg-amber-500 px-4 py-2 font-semibold text-slate-950"
+            >
+                Ajouter un satellite
+            </button>
+
+            <p *ngIf="role === 'LECTEUR'" class="mt-4 text-slate-400">
+                Consultation uniquement
+            </p>
+        </div>
+
+        <div class="bg-slate-900 p-6 rounded-2xl">
+            <h2 class="text-xl font-semibold">
+                Telemetry
+            </h2>
+
+            <p class="mt-4 text-slate-400">
+                Accessible à tous les rôles.
+            </p>
+        </div>
+
+    </div>
+
+    <div
+            *ngIf="role === 'ADMIN'"
+            class="mt-6 bg-slate-900 p-6 rounded-2xl border border-red-800"
+    >
+        <h2 class="text-xl font-semibold">
+            Administration
+        </h2>
+
+        <button class="mt-4 rounded-lg bg-red-600 px-4 py-2 font-semibold text-white">
+            Gérer les utilisateurs
+        </button>
+    </div>
+
 </div>
