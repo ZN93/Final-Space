@@ -186,6 +186,68 @@ jwt.expiration=3600000
 
 ---
 
+## RBAC – Gestion des rôles
+
+L’application utilise un système RBAC (Role-Based Access Control).
+
+### Rôles disponibles
+
+| Rôle | Description |
+|---|---|
+| ADMIN | Accès complet à toutes les fonctionnalités |
+| OPERATEUR | Accès aux fonctionnalités opérationnelles |
+| LECTEUR | Accès en lecture seule |
+
+---
+
+## Comptes de test
+
+| Rôle | Email | Mot de passe |
+|---|---|---|
+| ADMIN | admin@finalspace.com | admin123 |
+| OPERATEUR | operator@finalspace.com | operator123 |
+| LECTEUR | reader@finalspace.com | reader123 |
+
+---
+
+## Restrictions backend
+
+| Endpoint | Accès |
+|---|---|
+| GET /api/rbac/admin | ADMIN |
+| GET /api/rbac/operator | ADMIN, OPERATEUR |
+| GET /api/rbac/reader | ADMIN, OPERATEUR, LECTEUR |
+| GET /api/auth/me | ADMIN, OPERATEUR, LECTEUR |
+
+---
+
+## Gestion des erreurs
+
+| Cas | Réponse |
+|---|---|
+| Token absent ou invalide | 401 Unauthorized |
+| Token valide mais rôle insuffisant | 403 Forbidden |
+
+---
+
+## Comportement frontend
+
+Le frontend adapte automatiquement l’interface selon le rôle contenu dans le JWT :
+
+- ADMIN :
+    - accès administration
+    - accès opérations
+    - accès lecture
+
+- OPERATEUR :
+    - accès opérations
+    - accès lecture
+
+- LECTEUR :
+    - accès lecture seule
+
+---
+
 ## Logging
 
 Le backend utilise **Log4j2** pour la gestion des logs.
