@@ -14,6 +14,11 @@ export const routes: Routes = [
       import('./dashboard/dashboard.component').then(m => m.DashboardComponent)
   },
   {
+    path: 'forbidden',
+    loadComponent: () =>
+        import('./forbidden/forbidden.component').then(m => m.ForbiddenComponent)
+  },
+  {
     path: '',
     redirectTo: 'login',
     pathMatch: 'full'
