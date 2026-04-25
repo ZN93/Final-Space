@@ -99,6 +99,93 @@ Cet endpoint permet de vérifier le bon fonctionnement de l’API et la communic
 
 ---
 
+## Authentification JWT
+
+Le projet utilise une authentification basée sur JWT.
+
+### Endpoint de connexion
+
+```http
+POST /auth/login
+```
+
+### Payload
+
+```json
+{
+  "email": "admin@finalspace.com",
+  "password": "admin123"
+}
+```
+
+### Réponse
+
+```json
+{
+  "token": "jwt_token"
+}
+```
+
+---
+
+## Sécurité
+
+Les endpoints protégés nécessitent un token JWT :
+
+```http
+Authorization: Bearer <token>
+```
+
+Exemple d’endpoint protégé :
+
+```http
+GET /api/secure/test
+```
+
+Sans token valide, l’API retourne :
+
+```http
+401 Unauthorized
+```
+
+---
+
+## Compte de test
+
+Utilisateur administrateur de développement :
+
+```text
+email: admin@finalspace.com
+password: admin123
+```
+
+---
+
+## Frontend Auth
+
+Le frontend Angular implémente :
+
+- écran de connexion
+- stockage du JWT dans localStorage
+- HttpInterceptor pour ajouter automatiquement le token
+- AuthGuard pour protéger les routes
+- déconnexion avec suppression du token
+
+---
+
+## Variables d’environnement
+
+Le backend utilise une clé JWT configurable.
+
+Exemple :
+
+```properties
+jwt.secret=changeThisSecretKey
+jwt.expiration=3600000
+```
+
+---
+
 ## Logging
 
 Le backend utilise **Log4j2** pour la gestion des logs.

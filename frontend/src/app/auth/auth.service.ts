@@ -17,9 +17,10 @@ interface LoginResponse {
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly tokenKey = 'finalspace_token';
+  private readonly apiUrl = 'http://localhost:8080';
 
   login(credentials: LoginRequest): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>('/auth/login', credentials).pipe(
+    return this.http.post<LoginResponse>(`${this.apiUrl}/auth/login`, credentials).pipe(
       tap((response) => {
         localStorage.setItem(this.tokenKey, response.token);
       })
