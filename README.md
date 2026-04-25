@@ -1,4 +1,4 @@
-# Final Space – Initialisation du projet
+# Final Space - Initialisation du projet
 
 ## Description
 
@@ -186,7 +186,7 @@ jwt.expiration=3600000
 
 ---
 
-## RBAC – Gestion des rôles
+## RBAC - Gestion des rôles
 
 L’application utilise un système RBAC (Role-Based Access Control).
 
@@ -212,12 +212,25 @@ L’application utilise un système RBAC (Role-Based Access Control).
 
 ## Restrictions backend
 
-| Endpoint | Accès |
-|---|---|
-| GET /api/rbac/admin | ADMIN |
-| GET /api/rbac/operator | ADMIN, OPERATEUR |
-| GET /api/rbac/reader | ADMIN, OPERATEUR, LECTEUR |
-| GET /api/auth/me | ADMIN, OPERATEUR, LECTEUR |
+| Ressource / Endpoint | Méthode | ADMIN | OPERATEUR | LECTEUR |
+|---|---|---|---|---|
+| /api/users/** | Toutes | Oui | Non | Non |
+| /api/dashboard/** | GET | Oui | Oui | Oui |
+| /api/missions/** | GET | Oui | Oui | Oui |
+| /api/missions/** | POST, PUT, PATCH, DELETE | Oui | Oui | Non |
+| /api/satellites/** | GET | Oui | Oui | Oui |
+| /api/satellites/** | POST, PUT, PATCH, DELETE | Oui | Oui | Non |
+| /api/simulations/** | GET | Oui | Oui | Oui |
+| /api/simulations/** | POST, PUT, PATCH, DELETE | Oui | Oui | Non |
+| /api/telemetry/** | GET | Oui | Oui | Oui |
+| /api/telemetry/** | POST, PUT, PATCH, DELETE | Oui | Oui | Non |
+| /api/alerts/** | GET | Oui | Oui | Oui |
+| /api/alerts/** | POST, PUT, PATCH, DELETE | Oui | Oui | Non |
+| /api/incidents/** | GET | Oui | Oui | Oui |
+| /api/incidents/** | POST, PUT, PATCH, DELETE | Oui | Oui | Non |
+| /api/reports/** | GET | Oui | Oui | Oui |
+| /api/reports/** | POST, PUT, PATCH, DELETE | Oui | Oui | Non |
+| /api/auth/me | GET | Oui | Oui | Oui |
 
 ---
 
