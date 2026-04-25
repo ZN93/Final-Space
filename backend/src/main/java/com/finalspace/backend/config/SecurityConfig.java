@@ -38,6 +38,19 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/login").permitAll()
+
+                        .requestMatchers("/api/auth/me")
+                        .hasAnyRole("ADMIN", "OPERATEUR", "LECTEUR")
+
+                        .requestMatchers("/api/rbac/admin")
+                        .hasRole("ADMIN")
+
+                        .requestMatchers("/api/rbac/operator")
+                        .hasAnyRole("ADMIN", "OPERATEUR")
+
+                        .requestMatchers("/api/rbac/reader")
+                        .hasAnyRole("ADMIN", "OPERATEUR", "LECTEUR")
+
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
