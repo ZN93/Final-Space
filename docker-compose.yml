@@ -1,0 +1,36 @@
+services:
+
+  postgres:
+    image: postgres:17
+    container_name: finalspace-postgres
+
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: finalspace
+      POSTGRES_USER: finalspace
+      POSTGRES_PASSWORD: finalspace
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    networks:
+      - finalspace-network
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U finalspace"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+volumes:
+  postgres_data:
+
+
+networks:
+  finalspace-network:
+    driver: bridge
