@@ -15,6 +15,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.http.HttpMethod;
 
 import java.util.List;
 
@@ -25,6 +26,22 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
     private final RestAccessDeniedHandler restAccessDeniedHandler;
+    private static final String[] OPERATIONAL_RESOURCES = {
+            "/api/missions",
+            "/api/missions/**",
+            "/api/satellites",
+            "/api/satellites/**",
+            "/api/simulations",
+            "/api/simulations/**",
+            "/api/telemetry",
+            "/api/telemetry/**",
+            "/api/alerts",
+            "/api/alerts/**",
+            "/api/incidents",
+            "/api/incidents/**",
+            "/api/reports",
+            "/api/reports/**"
+    };
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -39,17 +56,26 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/login").permitAll()
 
-                        .requestMatchers("/api/auth/me")
-                        .hasAnyRole("ADMIN", "OPERATEUR", "LECTEUR")
+                        .requestMatchers("/api/users", "/api/users/**")
+                        .hasAuthority("ROLE_ADMIN")
 
-                        .requestMatchers("/api/rbac/admin")
-                        .hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/dashboard", "/api/dashboard/**")
+                        .hasAnyAuthority("ROLE_ADMIN", "ROLE_OPERATEUR", "ROLE_LECTEUR")
 
-                        .requestMatchers("/api/rbac/operator")
-                        .hasAnyRole("ADMIN", "OPERATEUR")
+                        .requestMatchers(HttpMethod.GET, OPERATIONAL_RESOURCES)
+                        .hasAnyAuthority("ROLE_ADMIN", "ROLE_OPERATEUR", "ROLE_LECTEUR")
 
-                        .requestMatchers("/api/rbac/reader")
-                        .hasAnyRole("ADMIN", "OPERATEUR", "LECTEUR")
+                        .requestMatchers(HttpMethod.POST, OPERATIONAL_RESOURCES)
+                        .hasAnyAuthority("ROLE_ADMIN", "ROLE_OPERATEUR")
+
+                        .requestMatchers(HttpMethod.PUT, OPERATIONAL_RESOURCES)
+                        .hasAnyAuthority("ROLE_ADMIN", "ROLE_OPERATEUR")
+
+                        .requestMatchers(HttpMethod.PATCH, OPERATIONAL_RESOURCES)
+                        .hasAnyAuthority("ROLE_ADMIN", "ROLE_OPERATEUR")
+
+                        .requestMatchers(HttpMethod.DELETE, OPERATIONAL_RESOURCES)
+                        .hasAnyAuthority("ROLE_ADMIN", "ROLE_OPERATEUR")
 
                         .anyRequest().authenticated()
                 )
