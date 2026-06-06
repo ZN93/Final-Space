@@ -76,6 +76,13 @@
         >
           Voir dashboard
         </a>
+        <a
+          *ngIf="mission"
+          [routerLink]="['/missions', mission.id, 'alerts']"
+          class="secondary-button"
+        >
+          Voir alertes
+        </a>
         <button
           *ngIf="canEdit()"
           type="submit"
