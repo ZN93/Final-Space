@@ -1,0 +1,122 @@
+<section class="mission-dashboard-page">
+  <div class="page-actions">
+    <a routerLink="/missions" class="secondary-button">
+      ← Retour aux missions
+    </a>
+  </div>
+
+  <div *ngIf="loading" class="state-card">
+    Chargement du dashboard...
+  </div>
+
+  <div *ngIf="errorMessage" class="error-card">
+    {{ errorMessage }}
+  </div>
+
+  <ng-container *ngIf="dashboard && !loading">
+    <div class="dashboard-header">
+      <div>
+        <h1>{{ dashboard.missionName }}</h1>
+        <p>Vue synthétique de l’état opérationnel de la mission.</p>
+      </div>
+
+      <div class="header-actions">
+        <span
+          class="status"
+          [class.active]="dashboard.missionStatus === 'ACTIVE'"
+          [class.closed]="dashboard.missionStatus === 'CLOTUREE'"
+        >
+          {{ dashboard.missionStatus }}
+        </span>
+
+        <button type="button" class="primary-button" (click)="refresh()">
+          Rafraîchir
+        </button>
+
+        <a [routerLink]="['/missions', dashboard.missionId]" class="secondary-button">
+          Détail mission
+        </a>
+      </div>
+    </div>
+
+    <div *ngIf="isMissionClosed()" class="info-card">
+      Cette mission est clôturée. Le dashboard reste consultable en lecture seule.
+    </div>
+
+    <section class="kpi-grid">
+      <article class="kpi-card">
+        <span class="kpi-label">Satellites total</span>
+        <strong>{{ dashboard.totalSatellites }}</strong>
+      </article>
+
+      <article class="kpi-card">
+        <span class="kpi-label">Satellites actifs</span>
+        <strong>{{ dashboard.activeSatellites }}</strong>
+      </article>
+
+      <article class="kpi-card">
+        <span class="kpi-label">Satellites inactifs</span>
+        <strong>{{ dashboard.inactiveSatellites }}</strong>
+      </article>
+
+      <article class="kpi-card">
+        <span class="kpi-label">Alertes actives</span>
+        <strong>{{ dashboard.activeAlerts }}</strong>
+      </article>
+
+      <article class="kpi-card">
+        <span class="kpi-label">Alertes acquittées</span>
+        <strong>{{ dashboard.acknowledgedAlerts }}</strong>
+      </article>
+
+      <article class="kpi-card">
+        <span class="kpi-label">Incidents ouverts</span>
+        <strong>{{ dashboard.openIncidents }}</strong>
+      </article>
+
+      <article class="kpi-card">
+        <span class="kpi-label">Incidents en cours</span>
+        <strong>{{ dashboard.inProgressIncidents }}</strong>
+      </article>
+
+      <article class="kpi-card">
+        <span class="kpi-label">Incidents clôturés</span>
+        <strong>{{ dashboard.closedIncidents }}</strong>
+      </article>
+    </section>
+
+    <section class="activity-section">
+      <div class="activity-card">
+        <h2>Dernières simulations</h2>
+
+        <div *ngIf="dashboard.lastSimulations.length === 0" class="empty-state">
+          Aucune simulation disponible pour le moment.
+        </div>
+
+        <ul *ngIf="dashboard.lastSimulations.length > 0">
+          <li *ngFor="let simulation of dashboard.lastSimulations">
+            {{ simulation }}
+          </li>
+        </ul>
+      </div>
+
+      <div class="activity-card">
+        <h2>Derniers imports télémétrie</h2>
+
+        <div *ngIf="dashboard.lastTelemetryImports.length === 0" class="empty-state">
+          Aucun import de télémétrie disponible pour le moment.
+        </div>
+
+        <ul *ngIf="dashboard.lastTelemetryImports.length > 0">
+          <li *ngFor="let telemetry of dashboard.lastTelemetryImports">
+            {{ telemetry }}
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <div *ngIf="hasNoActivity()" class="info-card">
+      Les modules simulations et télémétrie ne sont pas encore implémentés. Les listes d’activité sont donc vides dans ce MVP.
+    </div>
+  </ng-container>
+</section>

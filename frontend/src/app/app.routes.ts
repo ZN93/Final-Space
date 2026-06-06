@@ -4,6 +4,7 @@ import { authGuard } from './auth/auth.guard';
 import { MissionListComponent } from './missions/mission-list/mission-list.component';
 import { MissionFormComponent } from './missions/mission-form/mission-form.component';
 import { MissionDetailComponent } from './missions/mission-detail/mission-detail.component';
+import { MissionDashboardPageComponent } from './mission-dashboard/mission-dashboard-page/mission-dashboard-page.component';
 
 export const routes: Routes = [
   {
@@ -25,6 +26,11 @@ export const routes: Routes = [
     path: 'missions/create',
     canActivate: [authGuard],
     component: MissionFormComponent
+  },
+  {
+    path: 'missions/:id/dashboard',
+    canActivate: [authGuard],
+    component: MissionDashboardPageComponent
   },
   {
     path: 'missions/:id',
