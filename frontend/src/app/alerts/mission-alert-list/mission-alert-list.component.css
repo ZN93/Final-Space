@@ -1,0 +1,263 @@
+.alerts-page {
+  min-height: 100vh;
+  padding: 32px;
+  background: #020617;
+  color: white;
+}
+
+.page-actions,
+.alerts-header,
+.filters-card,
+.state-card,
+.error-card {
+  max-width: 1200px;
+  margin: 0 auto 16px;
+}
+
+.page-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.alerts-header,
+.filters-card,
+.state-card,
+.error-card {
+  background: #111827;
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.alerts-header {
+  border: 1px solid #1f2937;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.alerts-header h1 {
+  margin: 0 0 8px;
+  font-size: 32px;
+}
+
+.alerts-header p {
+  margin: 0;
+  color: #94a3b8;
+}
+
+.filters-card {
+  border: 1px solid #1f2937;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.filters-card label {
+  font-weight: 700;
+}
+
+.filters-card select {
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #020617;
+  color: white;
+}
+
+.primary-button,
+.secondary-button {
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.primary-button {
+  background: #f59e0b;
+  color: #020617;
+}
+
+.secondary-button {
+  display: inline-block;
+  background: #1e293b;
+  color: white;
+}
+
+.alert-table-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+  overflow-x: auto;
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.alert-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.alert-table th,
+.alert-table td {
+  padding: 12px;
+  border-bottom: 1px solid #1f2937;
+  text-align: left;
+  vertical-align: top;
+}
+
+.alert-table th {
+  color: #94a3b8;
+  font-size: 13px;
+  text-transform: uppercase;
+}
+
+.message-cell {
+  max-width: 280px;
+  white-space: normal;
+}
+
+.status,
+.severity {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.status.active {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+}
+
+.status.acknowledged {
+  background: rgba(148, 163, 184, 0.15);
+  color: #cbd5e1;
+}
+
+.severity.low {
+  background: rgba(34, 197, 94, 0.15);
+  color: #86efac;
+}
+
+.severity.medium {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fcd34d;
+}
+
+.severity.high {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+}
+
+.readonly-label {
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.error-card {
+  border: 1px solid #ef4444;
+  color: #fecaca;
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.state-card {
+  color: #cbd5e1;
+}
+
+@media (max-width: 900px) {
+  .alerts-header {
+    flex-direction: column;
+  }
+
+  .filters-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .filters-card select,
+  .primary-button,
+  .secondary-button {
+    width: 100%;
+  }
+
+  .alert-table,
+  .alert-table thead,
+  .alert-table tbody,
+  .alert-table th,
+  .alert-table td,
+  .alert-table tr {
+    display: block;
+  }
+
+  .alert-table thead {
+    display: none;
+  }
+
+  .alert-table tr {
+    border: 1px solid #1f2937;
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 12px;
+    background: rgba(2, 6, 23, 0.35);
+  }
+
+  .alert-table td {
+    border-bottom: none;
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 8px 0;
+    white-space: normal;
+  }
+
+  .alert-table td::before {
+    color: #94a3b8;
+    font-weight: 700;
+    min-width: 110px;
+  }
+
+  .alert-table td:nth-child(1)::before {
+    content: "Type";
+  }
+
+  .alert-table td:nth-child(2)::before {
+    content: "Gravité";
+  }
+
+  .alert-table td:nth-child(3)::before {
+    content: "Statut";
+  }
+
+  .alert-table td:nth-child(4)::before {
+    content: "Satellite";
+  }
+
+  .alert-table td:nth-child(5)::before {
+    content: "Métrique";
+  }
+
+  .alert-table td:nth-child(6)::before {
+    content: "Message";
+  }
+
+  .alert-table td:nth-child(7)::before {
+    content: "Créée le";
+  }
+
+  .alert-table td:nth-child(8)::before {
+    content: "Acquittement";
+  }
+}
+
+@media (max-width: 520px) {
+  .alerts-page {
+    padding: 16px;
+  }
+}

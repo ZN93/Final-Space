@@ -1,0 +1,101 @@
+<section class="alerts-page">
+  <div class="page-actions">
+    <a [routerLink]="['/missions', missionId]" class="secondary-button">
+      ← Retour mission
+    </a>
+
+    <a [routerLink]="['/missions', missionId, 'dashboard']" class="secondary-button">
+      Dashboard mission
+    </a>
+  </div>
+
+  <div class="alerts-header">
+    <div>
+      <h1>Alertes mission</h1>
+      <p>Consultation des alertes associées à la mission sélectionnée.</p>
+    </div>
+
+    <button type="button" class="primary-button" (click)="refresh()">
+      Rafraîchir
+    </button>
+  </div>
+
+  <div class="filters-card">
+    <label for="statusFilter">Filtrer par statut</label>
+
+    <select
+      id="statusFilter"
+      name="statusFilter"
+      [(ngModel)]="selectedStatus"
+      (change)="onStatusChange()"
+    >
+      <option value="ALL">Toutes</option>
+      <option value="ACTIVE">Actives</option>
+      <option value="ACQUITTEE">Acquittées</option>
+    </select>
+  </div>
+
+  <div *ngIf="loading" class="state-card">
+    Chargement des alertes...
+  </div>
+
+  <div *ngIf="errorMessage" class="error-card">
+    {{ errorMessage }}
+  </div>
+
+  <div *ngIf="!loading && !errorMessage && alerts.length === 0" class="state-card">
+    Aucune alerte trouvée pour cette mission.
+  </div>
+
+  <div *ngIf="!loading && !errorMessage && alerts.length > 0" class="alert-table-wrapper">
+    <table class="alert-table">
+      <thead>
+      <tr>
+        <th>Type</th>
+        <th>Gravité</th>
+        <th>Statut</th>
+        <th>Satellite</th>
+        <th>Métrique</th>
+        <th>Message</th>
+        <th>Créée le</th>
+        <th>Acquittement</th>
+      </tr>
+      </thead>
+
+      <tbody>
+      <tr *ngFor="let alert of alerts">
+        <td>{{ alert.type }}</td>
+
+        <td>
+          <span class="severity" [class.low]="alert.severity === 'FAIBLE'" [class.medium]="alert.severity === 'MOYENNE'" [class.high]="alert.severity === 'ELEVEE'">
+            {{ alert.severity }}
+          </span>
+        </td>
+
+        <td>
+          <span class="status" [class.active]="isActive(alert)" [class.acknowledged]="isAcknowledged(alert)">
+            {{ alert.status }}
+          </span>
+        </td>
+
+        <td>{{ alert.satelliteName || 'Mission' }}</td>
+        <td>{{ alert.metric }}</td>
+        <td class="message-cell">{{ alert.message }}</td>
+        <td>{{ alert.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+
+        <td>
+          <span *ngIf="alert.ackAt">
+            {{ alert.ackAt | date:'dd/MM/yyyy HH:mm' }}
+            <br />
+            <small>{{ alert.ackBy }}</small>
+          </span>
+
+          <span *ngIf="!alert.ackAt" class="readonly-label">
+            Non acquittée
+          </span>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+</section>

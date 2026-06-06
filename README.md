@@ -361,86 +361,6 @@ Un satellite est un objet opérationnel associé à une mission. Il sert de supp
 
 ---
 
-## Dashboard mission
-
-L’application permet de consulter un dashboard synthétique pour une mission.
-
-Le dashboard affiche les informations principales de la mission ainsi que les indicateurs disponibles dans le MVP.
-
-Les indicateurs liés aux satellites sont calculés depuis les données en base.  
-Les indicateurs liés aux alertes, incidents, simulations et imports de télémétrie sont présents mais restent à zéro ou vides tant que les modules correspondants ne sont pas implémentés.
-
-### Endpoint Dashboard
-
-Tous les rôles authentifiés peuvent consulter le dashboard d’une mission.
-
-| Méthode | Endpoint | Description | Rôles autorisés |
-|---|---|---|---|
-| `GET` | `/api/missions/{id}/dashboard` | Consulter le dashboard d’une mission | ADMIN, OPERATEUR, LECTEUR |
-
----
-
-### Exemple de consultation du dashboard
-
-```http
-GET /api/missions/4/dashboard
-Authorization: Bearer <token>
-```
-
-Réponse :
-
-```json
-{
-  "missionId": 4,
-  "missionName": "Mission to the MOOOOON",
-  "missionStatus": "ACTIVE",
-  "totalSatellites": 5,
-  "activeSatellites": 3,
-  "inactiveSatellites": 2,
-  "activeAlerts": 0,
-  "acknowledgedAlerts": 0,
-  "openIncidents": 0,
-  "inProgressIncidents": 0,
-  "closedIncidents": 0,
-  "lastSimulations": [],
-  "lastTelemetryImports": []
-}
-```
-
----
-
-### Indicateurs affichés
-
-| Indicateur | Source | État MVP |
-|---|---|---|
-| Nom de la mission | Mission | Disponible |
-| Statut de la mission | Mission | Disponible |
-| Nombre total de satellites | Satellites | Disponible |
-| Nombre de satellites actifs | Satellites | Disponible |
-| Nombre de satellites inactifs | Satellites | Disponible |
-| Alertes actives | Futur module Alertes | Valeur temporaire à `0` |
-| Alertes acquittées | Futur module Alertes | Valeur temporaire à `0` |
-| Incidents ouverts | Futur module Incidents | Valeur temporaire à `0` |
-| Incidents en cours | Futur module Incidents | Valeur temporaire à `0` |
-| Incidents clôturés | Futur module Incidents | Valeur temporaire à `0` |
-| Dernières simulations | Futur module Simulations | Liste vide temporaire |
-| Derniers imports télémétrie | Futur module Télémétrie | Liste vide temporaire |
-
----
-
-### Comportement frontend Dashboard
-
-Le frontend Angular permet :
-
-- d’accéder au dashboard depuis le détail d’une mission ;
-- d’afficher les KPI sous forme de cartes ;
-- de consulter le dashboard avec les rôles ADMIN, OPERATEUR et LECTEUR ;
-- de consulter le dashboard même si la mission est clôturée ;
-- de rafraîchir manuellement les données ;
-- de revenir vers le détail de la mission.
-
----
-
 ### Endpoints Satellites
 
 Tous les endpoints satellites nécessitent un token JWT.
@@ -560,6 +480,226 @@ Réponse :
 
 ---
 
+## Dashboard mission
+
+L’application permet de consulter un dashboard synthétique pour une mission.
+
+Le dashboard affiche les informations principales de la mission ainsi que les indicateurs disponibles dans le MVP.
+
+Les indicateurs liés aux satellites sont calculés depuis les données en base.  
+Les indicateurs liés aux alertes, incidents, simulations et imports de télémétrie sont présents mais restent à zéro ou vides tant que les modules correspondants ne sont pas implémentés.
+
+### Endpoint Dashboard
+
+Tous les rôles authentifiés peuvent consulter le dashboard d’une mission.
+
+| Méthode | Endpoint | Description | Rôles autorisés |
+|---|---|---|---|
+| `GET` | `/api/missions/{id}/dashboard` | Consulter le dashboard d’une mission | ADMIN, OPERATEUR, LECTEUR |
+
+---
+
+### Exemple de consultation du dashboard
+
+```http
+GET /api/missions/4/dashboard
+Authorization: Bearer <token>
+```
+
+Réponse :
+
+```json
+{
+  "missionId": 4,
+  "missionName": "Mission to the MOOOOON",
+  "missionStatus": "ACTIVE",
+  "totalSatellites": 5,
+  "activeSatellites": 3,
+  "inactiveSatellites": 2,
+  "activeAlerts": 0,
+  "acknowledgedAlerts": 0,
+  "openIncidents": 0,
+  "inProgressIncidents": 0,
+  "closedIncidents": 0,
+  "lastSimulations": [],
+  "lastTelemetryImports": []
+}
+```
+
+---
+
+### Indicateurs affichés
+
+| Indicateur | Source | État MVP |
+|---|---|---|
+| Nom de la mission | Mission | Disponible |
+| Statut de la mission | Mission | Disponible |
+| Nombre total de satellites | Satellites | Disponible |
+| Nombre de satellites actifs | Satellites | Disponible |
+| Nombre de satellites inactifs | Satellites | Disponible |
+| Alertes actives | Futur module Alertes | Valeur temporaire à `0` |
+| Alertes acquittées | Futur module Alertes | Valeur temporaire à `0` |
+| Incidents ouverts | Futur module Incidents | Valeur temporaire à `0` |
+| Incidents en cours | Futur module Incidents | Valeur temporaire à `0` |
+| Incidents clôturés | Futur module Incidents | Valeur temporaire à `0` |
+| Dernières simulations | Futur module Simulations | Liste vide temporaire |
+| Derniers imports télémétrie | Futur module Télémétrie | Liste vide temporaire |
+
+---
+
+### Comportement frontend Dashboard
+
+Le frontend Angular permet :
+
+- d’accéder au dashboard depuis le détail d’une mission ;
+- d’afficher les KPI sous forme de cartes ;
+- de consulter le dashboard avec les rôles ADMIN, OPERATEUR et LECTEUR ;
+- de consulter le dashboard même si la mission est clôturée ;
+- de rafraîchir manuellement les données ;
+- de revenir vers le détail de la mission.
+
+---
+
+## Gestion des alertes
+
+L’application permet de consulter les alertes associées à une mission.
+
+Une alerte représente une situation nécessitant une attention particulière.  
+Dans le MVP actuel, la consultation des alertes est opérationnelle, mais leur génération automatique sera traitée dans les futures fonctionnalités liées à la télémétrie et à la détection d’anomalies.
+
+### Champs principaux
+
+| Champ | Description |
+|---|---|
+| `id` | Identifiant technique de l’alerte |
+| `missionId` | Identifiant de la mission associée |
+| `missionName` | Nom de la mission associée |
+| `satelliteId` | Identifiant du satellite concerné, optionnel |
+| `satelliteName` | Nom du satellite concerné, optionnel |
+| `metric` | Métrique ou source ayant déclenché l’alerte |
+| `type` | Type d’alerte |
+| `severity` | Gravité de l’alerte |
+| `status` | Statut de l’alerte |
+| `message` | Message descriptif |
+| `createdAt` | Date de création |
+| `ackAt` | Date d’acquittement, si applicable |
+| `ackBy` | Utilisateur ayant acquitté l’alerte, si applicable |
+
+### Statuts disponibles
+
+| Statut | Description |
+|---|---|
+| `ACTIVE` | Alerte active nécessitant une attention |
+| `ACQUITTEE` | Alerte acquittée |
+
+### Gravités disponibles
+
+| Gravité | Description |
+|---|---|
+| `FAIBLE` | Alerte de faible gravité |
+| `MOYENNE` | Alerte de gravité moyenne |
+| `ELEVEE` | Alerte de gravité élevée |
+
+---
+
+### Endpoint Alertes
+
+Tous les rôles authentifiés peuvent consulter les alertes d’une mission.
+
+| Méthode | Endpoint | Description | Rôles autorisés |
+|---|---|---|---|
+| `GET` | `/api/missions/{missionId}/alerts` | Lister les alertes d’une mission | ADMIN, OPERATEUR, LECTEUR |
+
+Paramètre optionnel :
+
+| Paramètre | Valeurs | Description |
+|---|---|---|
+| `status` | `ACTIVE`, `ACQUITTEE` | Filtrer les alertes par statut |
+
+---
+
+### Exemple de consultation des alertes
+
+```http
+GET /api/missions/4/alerts
+Authorization: Bearer <token>
+```
+
+Réponse :
+
+```json
+[
+  {
+    "id": 1,
+    "missionId": 4,
+    "missionName": "Mission Artemis",
+    "satelliteId": 10,
+    "satelliteName": "LunaSat-01",
+    "metric": "temperature",
+    "type": "THERMAL_ANOMALY",
+    "severity": "ELEVEE",
+    "status": "ACTIVE",
+    "message": "Température satellite supérieure au seuil",
+    "createdAt": "2026-06-07T00:02:00",
+    "ackAt": null,
+    "ackBy": null
+  }
+]
+```
+
+---
+
+### Exemple avec filtre par statut
+
+```http
+GET /api/missions/4/alerts?status=ACTIVE
+Authorization: Bearer <token>
+```
+
+Réponse possible si aucune alerte active n’existe :
+
+```json
+[]
+```
+
+---
+
+### Règles métier Alertes
+
+| Règle | Description |
+|---|---|
+| Mission obligatoire | Une alerte est rattachée à une mission |
+| Satellite optionnel | Une alerte peut être rattachée à un satellite ou à la mission globalement |
+| Consultation | Les alertes sont consultables par ADMIN, OPERATEUR et LECTEUR |
+| Filtrage | Les alertes peuvent être filtrées par statut |
+| Tri | Les alertes sont retournées par date de création décroissante |
+| Suppression | La suppression d’une alerte est hors périmètre |
+| Modification | La modification manuelle d’une alerte est hors périmètre |
+| Génération automatique | La génération automatique dépendra des futures US de télémétrie et d’anomalies |
+
+---
+
+### Comportement frontend Alertes
+
+Le frontend Angular permet :
+
+- d’accéder à la liste des alertes depuis une mission ;
+- d’accéder à la liste des alertes depuis le dashboard mission ;
+- d’afficher les alertes dans un tableau responsive ;
+- de distinguer les alertes actives et acquittées ;
+- de distinguer les niveaux de gravité ;
+- de filtrer les alertes par statut ;
+- de rafraîchir manuellement la liste ;
+- de gérer les états loading, erreur et liste vide.
+
+| Rôle | Comportement UI |
+|---|---|
+| ADMIN | Peut consulter les alertes |
+| OPERATEUR | Peut consulter les alertes |
+| LECTEUR | Peut consulter les alertes |
+
+---
+
 ## Tests
 
 Le projet contient des tests automatisés côté backend.
@@ -580,6 +720,8 @@ Les tests couvrent notamment :
 - les règles RBAC ;
 - la gestion des missions ;
 - la gestion des satellites ;
+- la consultation des alertes ;
+- les filtres d’alertes par statut ;
 - les règles métier liées aux missions clôturées ;
 - les règles métier liées aux satellites inactifs.
 
@@ -623,6 +765,7 @@ Workflow :
 - RBAC opérationnel ;
 - gestion des missions opérationnelle ;
 - gestion des satellites opérationnelle ;
+- consultation des alertes opérationnelle ;
 - tests backend en place ;
 - CI GitHub Actions en place.
 
@@ -637,6 +780,7 @@ Workflow :
 | Protection des routes frontend | Réalisée |
 | Gestion des missions | Réalisée |
 | Gestion des satellites | Réalisée |
+| Consultation des alertes | Réalisée |
 | Tests backend | Réalisés |
 | CI minimale | Réalisée |
 
@@ -648,6 +792,7 @@ Les prochaines fonctionnalités métier prévues sont :
 
 - gestion des simulations orbitales ;
 - import et analyse de télémétrie ;
-- gestion des alertes ;
+- détection d’anomalies ;
+- génération automatique d’alertes ;
 - gestion des incidents ;
 - génération de rapports.

@@ -36,6 +36,13 @@
         <a [routerLink]="['/missions', dashboard.missionId]" class="secondary-button">
           Détail mission
         </a>
+        <a
+          *ngIf="dashboard"
+          [routerLink]="['/missions', dashboard.missionId, 'alerts']"
+          class="secondary-button"
+        >
+          Voir alertes
+        </a>
       </div>
     </div>
 
