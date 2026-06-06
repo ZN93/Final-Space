@@ -361,6 +361,86 @@ Un satellite est un objet opérationnel associé à une mission. Il sert de supp
 
 ---
 
+## Dashboard mission
+
+L’application permet de consulter un dashboard synthétique pour une mission.
+
+Le dashboard affiche les informations principales de la mission ainsi que les indicateurs disponibles dans le MVP.
+
+Les indicateurs liés aux satellites sont calculés depuis les données en base.  
+Les indicateurs liés aux alertes, incidents, simulations et imports de télémétrie sont présents mais restent à zéro ou vides tant que les modules correspondants ne sont pas implémentés.
+
+### Endpoint Dashboard
+
+Tous les rôles authentifiés peuvent consulter le dashboard d’une mission.
+
+| Méthode | Endpoint | Description | Rôles autorisés |
+|---|---|---|---|
+| `GET` | `/api/missions/{id}/dashboard` | Consulter le dashboard d’une mission | ADMIN, OPERATEUR, LECTEUR |
+
+---
+
+### Exemple de consultation du dashboard
+
+```http
+GET /api/missions/4/dashboard
+Authorization: Bearer <token>
+```
+
+Réponse :
+
+```json
+{
+  "missionId": 4,
+  "missionName": "Mission to the MOOOOON",
+  "missionStatus": "ACTIVE",
+  "totalSatellites": 5,
+  "activeSatellites": 3,
+  "inactiveSatellites": 2,
+  "activeAlerts": 0,
+  "acknowledgedAlerts": 0,
+  "openIncidents": 0,
+  "inProgressIncidents": 0,
+  "closedIncidents": 0,
+  "lastSimulations": [],
+  "lastTelemetryImports": []
+}
+```
+
+---
+
+### Indicateurs affichés
+
+| Indicateur | Source | État MVP |
+|---|---|---|
+| Nom de la mission | Mission | Disponible |
+| Statut de la mission | Mission | Disponible |
+| Nombre total de satellites | Satellites | Disponible |
+| Nombre de satellites actifs | Satellites | Disponible |
+| Nombre de satellites inactifs | Satellites | Disponible |
+| Alertes actives | Futur module Alertes | Valeur temporaire à `0` |
+| Alertes acquittées | Futur module Alertes | Valeur temporaire à `0` |
+| Incidents ouverts | Futur module Incidents | Valeur temporaire à `0` |
+| Incidents en cours | Futur module Incidents | Valeur temporaire à `0` |
+| Incidents clôturés | Futur module Incidents | Valeur temporaire à `0` |
+| Dernières simulations | Futur module Simulations | Liste vide temporaire |
+| Derniers imports télémétrie | Futur module Télémétrie | Liste vide temporaire |
+
+---
+
+### Comportement frontend Dashboard
+
+Le frontend Angular permet :
+
+- d’accéder au dashboard depuis le détail d’une mission ;
+- d’afficher les KPI sous forme de cartes ;
+- de consulter le dashboard avec les rôles ADMIN, OPERATEUR et LECTEUR ;
+- de consulter le dashboard même si la mission est clôturée ;
+- de rafraîchir manuellement les données ;
+- de revenir vers le détail de la mission.
+
+---
+
 ### Endpoints Satellites
 
 Tous les endpoints satellites nécessitent un token JWT.
