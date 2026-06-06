@@ -7,4 +7,8 @@ import java.util.List;
 public interface SatelliteRepository extends JpaRepository<Satellite, Long> {
 
     List<Satellite> findByMissionId(Long missionId);
+
+    long countByMissionId(Long missionId);
+
+    long countByMissionIdAndStatus(Long missionId, SatelliteStatus status);
 }
