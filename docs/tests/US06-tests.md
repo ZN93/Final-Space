@@ -1,10 +1,12 @@
 # US06 - Créer et gérer des satellites rattachés à une mission
 
-## État de validation
+### État de validation
 
-**Backend validé. Frontend restant à réaliser.**
+**US06 validée côté backend et frontend.**
 
 Les endpoints API de gestion des satellites ont été testés manuellement avec Postman et automatiquement avec JUnit / MockMvc.
+
+Le parcours frontend a également été validé manuellement depuis l’interface Angular avec les rôles ADMIN, OPERATEUR et LECTEUR.
 
 ---
 
@@ -64,3 +66,109 @@ Classe associée :
 
 ```text
 backend/src/test/java/com/finalspace/backend/satellite/service/impl/SatelliteServiceImplTest.java
+```
+
+---
+
+## Tests d’intégration API / sécurité
+
+| ID | Scénario | Résultat attendu | État |
+|---|---|---|---|
+| US06-T12 | ADMIN crée un satellite dans une mission active | `201 Created` | PASS |
+| US06-T13 | OPERATEUR crée un satellite dans une mission active | `201 Created` | PASS |
+| US06-T14 | LECTEUR tente de créer un satellite | `403 Forbidden` | PASS |
+| US06-T15 | LECTEUR liste les satellites d’une mission | `200 OK` | PASS |
+| US06-T16 | LECTEUR consulte le détail d’un satellite | `200 OK` | PASS |
+| US06-T17 | LECTEUR tente de modifier un satellite | `403 Forbidden` | PASS |
+| US06-T18 | LECTEUR tente de désactiver un satellite | `403 Forbidden` | PASS |
+| US06-T19 | Création dans une mission clôturée | `400 Bad Request` | PASS |
+| US06-T20 | ADMIN modifie un satellite actif | `200 OK` | PASS |
+| US06-T21 | ADMIN désactive un satellite | `200 OK` | PASS |
+| US06-T22 | ADMIN tente de modifier un satellite inactif | `400 Bad Request` | PASS |
+
+Classe associée :
+
+```text
+backend/src/test/java/com/finalspace/backend/security/SatelliteAuthorizationIntegrationTest.java
+```
+
+---
+
+## Tests manuels Postman réalisés
+
+| Rôle | Scénario | Résultat attendu | État |
+|---|---|---|---|
+| ADMIN | Créer un satellite dans une mission active | `201 Created` | PASS |
+| ADMIN | Créer un satellite dans une mission clôturée | `400 Bad Request` | PASS |
+| ADMIN | Lister les satellites d’une mission | `200 OK` | PASS |
+| ADMIN | Consulter le détail d’un satellite | `200 OK` | PASS |
+| ADMIN | Modifier un satellite actif | `200 OK` | PASS |
+| ADMIN | Désactiver un satellite | `200 OK` | PASS |
+| ADMIN | Modifier un satellite inactif | `400 Bad Request` | PASS |
+| OPERATEUR | Créer, consulter, modifier et désactiver un satellite | Actions autorisées | PASS |
+| LECTEUR | Consulter les satellites | `200 OK` | PASS |
+| LECTEUR | Créer, modifier ou désactiver un satellite | `403 Forbidden` | PASS |
+
+---
+
+## Tests frontend réalisés
+
+Les tests fonctionnels UI ont été validés manuellement avec les rôles ADMIN, OPERATEUR et LECTEUR.
+
+| ID | Scénario | Résultat attendu | État |
+|---|---|---|---|
+| US06-T23 | Afficher les satellites dans le détail d’une mission | Liste visible dans la page mission | PASS |
+| US06-T24 | Créer un satellite depuis une mission active | Satellite affiché dans la liste | PASS |
+| US06-T25 | Modifier un satellite actif | Données mises à jour | PASS |
+| US06-T26 | Désactiver un satellite | Statut `INACTIF` affiché | PASS |
+| US06-T27 | Consulter un satellite inactif | Affichage en lecture seule | PASS |
+| US06-T28 | Se connecter en LECTEUR | Actions créer, modifier et désactiver masquées | PASS |
+| US06-T29 | Ouvrir une mission clôturée | Création de satellite impossible | PASS |
+| US06-T30 | Vérifier la navigation via le détail mission | Satellites accessibles depuis la mission | PASS |
+
+---
+
+## Résultat d’exécution automatisée
+
+Commandes exécutées :
+
+```bash
+./mvnw clean test
+```
+
+```bash
+npm run build
+```
+
+Résultats :
+
+```text
+BUILD SUCCESS côté backend
+Application bundle generation complete côté frontend
+```
+
+Un warning Angular est présent sur le budget CSS du composant `mission-detail`, mais il n’est pas bloquant pour le MVP.
+
+---
+
+## Documentation réalisée
+
+| Élément | État |
+|---|---|
+| Documentation des tests backend | Réalisée |
+| Documentation des tests frontend | Réalisée |
+| Endpoints satellites dans le README | Réalisée |
+| Exemples de payload satellites dans le README | Réalisée |
+| Compte rendu de validation UI | Réalisé |
+
+---
+
+## Conclusion
+
+L’US06 est validée côté backend et frontend.
+
+Le backend permet la création, la consultation, la modification et la désactivation logique des satellites.  
+Le frontend permet de gérer les satellites directement depuis le détail d’une mission.  
+Les règles métier sont respectées : un satellite doit être rattaché à une mission active, un satellite inactif reste consultable mais ne peut plus être modifié, et les droits d’accès sont conformes aux rôles ADMIN, OPERATEUR et LECTEUR.
+
+La documentation README a été mise à jour avec les endpoints satellites et les exemples de payload.

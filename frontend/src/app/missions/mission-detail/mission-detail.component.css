@@ -13,7 +13,7 @@
 .state-card,
 .error-card,
 .success-card {
-  max-width: 820px;
+  max-width: 1100px;
   margin: 0 auto 16px;
   background: #111827;
   border-radius: 16px;
@@ -163,4 +163,216 @@ textarea:focus {
 
 .state-card {
   color: #cbd5e1;
+}
+
+.satellites-section {
+  max-width: 1100px;
+  margin: 24px auto 0;
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.satellites-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.satellites-header h2 {
+  margin: 0 0 8px;
+  font-size: 24px;
+}
+
+.satellites-header p {
+  margin: 0;
+  color: #94a3b8;
+}
+
+.satellite-table-wrapper {
+  overflow-x: auto;
+}
+
+.satellite-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.satellite-table th,
+.satellite-table td {
+  padding: 12px;
+  border-bottom: 1px solid #1f2937;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.satellite-table th:last-child,
+.satellite-table td:last-child {
+  min-width: 150px;
+}
+
+.satellite-table th {
+  color: #94a3b8;
+  font-size: 13px;
+  text-transform: uppercase;
+}
+
+.readonly-label {
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: normal;
+}
+
+.satellite-form {
+  border: 1px solid #334155;
+  border-radius: 14px;
+  padding: 18px;
+  margin-bottom: 20px;
+  background: rgba(2, 6, 23, 0.45);
+}
+
+.satellite-form h3 {
+  margin: 0 0 16px;
+  font-size: 18px;
+}
+
+.satellite-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.satellite-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+@media (max-width: 768px) {
+  .satellite-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.satellite-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.small-secondary-button,
+.small-danger-button {
+  border: none;
+  border-radius: 8px;
+  padding: 6px 9px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.small-secondary-button {
+  background: #1e293b;
+  color: white;
+}
+
+.small-secondary-button:hover {
+  background: #334155;
+}
+
+.small-danger-button {
+  background: #dc2626;
+  color: white;
+}
+
+.small-danger-button:hover {
+  background: #b91c1c;
+}
+
+.small-danger-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.satellite-edit-form {
+  margin-top: 20px;
+}
+
+/* Responsive : transforme le tableau en cartes sur petit écran */
+@media (max-width: 900px) {
+  .satellite-table,
+  .satellite-table thead,
+  .satellite-table tbody,
+  .satellite-table th,
+  .satellite-table td,
+  .satellite-table tr {
+    display: block;
+  }
+
+  .satellite-table thead {
+    display: none;
+  }
+
+  .satellite-table tr {
+    border: 1px solid #1f2937;
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 12px;
+    background: rgba(2, 6, 23, 0.35);
+  }
+
+  .satellite-table td {
+    border-bottom: none;
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 8px 0;
+    white-space: normal;
+  }
+
+  .satellite-table td::before {
+    color: #94a3b8;
+    font-weight: 700;
+    min-width: 110px;
+  }
+
+  .satellite-table td:nth-child(1)::before {
+    content: "Nom";
+  }
+
+  .satellite-table td:nth-child(2)::before {
+    content: "Statut";
+  }
+
+  .satellite-table td:nth-child(3)::before {
+    content: "Masse";
+  }
+
+  .satellite-table td:nth-child(4)::before {
+    content: "Altitude";
+  }
+
+  .satellite-table td:nth-child(5)::before {
+    content: "Inclinaison";
+  }
+
+  .satellite-table td:nth-child(6)::before {
+    content: "Excentricité";
+  }
+
+  .satellite-table td:nth-child(7)::before {
+    content: "Actions";
+  }
+
+  .satellite-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
 }

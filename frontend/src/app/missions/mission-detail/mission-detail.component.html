@@ -89,5 +89,298 @@
         </button>
       </div>
     </form>
+    <section class="satellites-section">
+      <div class="satellites-header">
+        <div>
+          <h2>Satellites rattachés</h2>
+          <p>Liste des satellites associés à cette mission.</p>
+        </div>
+
+        <button
+          *ngIf="canCreateSatellite()"
+          type="button"
+          class="primary-button"
+          (click)="toggleSatelliteForm()"
+        >
+          {{ showSatelliteForm ? 'Fermer le formulaire' : 'Ajouter un satellite' }}
+        </button>
+      </div>
+
+      <form
+        *ngIf="showSatelliteForm"
+        class="satellite-form"
+        (ngSubmit)="createSatellite()"
+      >
+        <h3>Nouveau satellite</h3>
+
+        <div class="satellite-form-grid">
+          <div class="form-group">
+            <label for="satelliteName">Nom du satellite *</label>
+            <input
+              id="satelliteName"
+              name="satelliteName"
+              type="text"
+              [(ngModel)]="satelliteName"
+              placeholder="Ex : LunaSat-01"
+              maxlength="150"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="satelliteMassKg">Masse (kg)</label>
+            <input
+              id="satelliteMassKg"
+              name="satelliteMassKg"
+              type="number"
+              [(ngModel)]="satelliteMassKg"
+              placeholder="Ex : 850"
+              min="0"
+              step="0.01"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="satelliteAltitudeKm">Altitude initiale (km)</label>
+            <input
+              id="satelliteAltitudeKm"
+              name="satelliteAltitudeKm"
+              type="number"
+              [(ngModel)]="satelliteAltitudeKm"
+              placeholder="Ex : 400"
+              min="0"
+              step="0.01"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="satelliteInclinationDeg">Inclinaison (°)</label>
+            <input
+              id="satelliteInclinationDeg"
+              name="satelliteInclinationDeg"
+              type="number"
+              [(ngModel)]="satelliteInclinationDeg"
+              placeholder="Ex : 51.6"
+              step="0.01"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="satelliteEccentricity">Excentricité</label>
+            <input
+              id="satelliteEccentricity"
+              name="satelliteEccentricity"
+              type="number"
+              [(ngModel)]="satelliteEccentricity"
+              placeholder="Ex : 0.001"
+              min="0"
+              step="0.001"
+            />
+          </div>
+        </div>
+
+        <div *ngIf="satelliteFormErrorMessage" class="error-card">
+          {{ satelliteFormErrorMessage }}
+        </div>
+
+        <div class="satellite-form-actions">
+          <button
+            type="button"
+            class="secondary-button"
+            (click)="toggleSatelliteForm()"
+          >
+            Annuler
+          </button>
+
+          <button
+            type="submit"
+            class="primary-button"
+            [disabled]="satelliteSaving"
+          >
+            {{ satelliteSaving ? 'Création...' : 'Créer le satellite' }}
+          </button>
+        </div>
+      </form>
+
+      <div *ngIf="isClosed()" class="info-card">
+        La mission est clôturée : aucun nouveau satellite ne peut être ajouté.
+      </div>
+
+      <div *ngIf="satellitesLoading" class="state-card">
+        Chargement des satellites...
+      </div>
+
+      <div *ngIf="satellitesErrorMessage" class="error-card">
+        {{ satellitesErrorMessage }}
+      </div>
+
+      <div
+        *ngIf="!satellitesLoading && !satellitesErrorMessage && satellites.length === 0"
+        class="state-card"
+      >
+        Aucun satellite rattaché à cette mission.
+      </div>
+
+      <div
+        *ngIf="!satellitesLoading && !satellitesErrorMessage && satellites.length > 0"
+        class="satellite-table-wrapper"
+      >
+        <table class="satellite-table">
+          <thead>
+          <tr>
+            <th>Nom</th>
+            <th>Statut</th>
+            <th>Masse</th>
+            <th>Altitude</th>
+            <th>Inclinaison</th>
+            <th>Excentricité</th>
+            <th>Actions</th>
+          </tr>
+          </thead>
+
+          <tbody>
+            <tr *ngFor="let satellite of satellites">
+              <td>{{ satellite.name }}</td>
+
+              <td>
+                <span
+                  class="status"
+                  [class.active]="satellite.status === 'ACTIF'"
+                  [class.closed]="satellite.status === 'INACTIF'"
+                >
+                  {{ satellite.status }}
+                </span>
+              </td>
+
+              <td>{{ satellite.massKg || '-' }} kg</td>
+              <td>{{ satellite.altitudeKm || '-' }} km</td>
+              <td>{{ satellite.inclinationDeg || '-' }} °</td>
+              <td>{{ satellite.eccentricity ?? '-' }}</td>
+
+              <td>
+                <div class="satellite-actions">
+                  <button
+                    *ngIf="canEditSatellite(satellite)"
+                    type="button"
+                    class="small-secondary-button"
+                    (click)="startEditSatellite(satellite)"
+                  >
+                    Modifier
+                  </button>
+
+                  <button
+                    *ngIf="canEditSatellite(satellite)"
+                    type="button"
+                    class="small-danger-button"
+                    [disabled]="satelliteDisableSaving"
+                    (click)="disableSatellite(satellite)"
+                  >
+                    Désactiver
+                  </button>
+
+                  <span *ngIf="isSatelliteInactive(satellite)" class="readonly-label">
+                    Lecture seule
+                  </span>
+
+                  <span *ngIf="!isSatelliteInactive(satellite) && !canManage()" class="readonly-label">
+                    Consultation
+                  </span>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <form
+        *ngIf="editingSatelliteId"
+        class="satellite-form satellite-edit-form"
+        (ngSubmit)="updateSatellite()"
+      >
+        <h3>Modifier le satellite</h3>
+
+        <div class="satellite-form-grid">
+          <div class="form-group">
+            <label for="editSatelliteName">Nom du satellite *</label>
+            <input
+              id="editSatelliteName"
+              name="editSatelliteName"
+              type="text"
+              [(ngModel)]="editSatelliteName"
+              maxlength="150"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="editSatelliteMassKg">Masse (kg)</label>
+            <input
+              id="editSatelliteMassKg"
+              name="editSatelliteMassKg"
+              type="number"
+              [(ngModel)]="editSatelliteMassKg"
+              min="0"
+              step="0.01"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="editSatelliteAltitudeKm">Altitude initiale (km)</label>
+            <input
+              id="editSatelliteAltitudeKm"
+              name="editSatelliteAltitudeKm"
+              type="number"
+              [(ngModel)]="editSatelliteAltitudeKm"
+              min="0"
+              step="0.01"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="editSatelliteInclinationDeg">Inclinaison (°)</label>
+            <input
+              id="editSatelliteInclinationDeg"
+              name="editSatelliteInclinationDeg"
+              type="number"
+              [(ngModel)]="editSatelliteInclinationDeg"
+              step="0.01"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="editSatelliteEccentricity">Excentricité</label>
+            <input
+              id="editSatelliteEccentricity"
+              name="editSatelliteEccentricity"
+              type="number"
+              [(ngModel)]="editSatelliteEccentricity"
+              min="0"
+              step="0.001"
+            />
+          </div>
+        </div>
+
+        <div *ngIf="satelliteEditErrorMessage" class="error-card">
+          {{ satelliteEditErrorMessage }}
+        </div>
+
+        <div class="satellite-form-actions">
+          <button
+            type="button"
+            class="secondary-button"
+            (click)="cancelEditSatellite()"
+          >
+            Annuler
+          </button>
+
+          <button
+            type="submit"
+            class="primary-button"
+            [disabled]="satelliteUpdateSaving"
+          >
+            {{ satelliteUpdateSaving ? 'Modification...' : 'Modifier le satellite' }}
+          </button>
+        </div>
+      </form>
+    </section>
   </div>
 </section>
