@@ -1,4 +1,4 @@
-# US04 — Protection des endpoints API
+# US04 - Protection des endpoints API
 
 ## Objectif de validation
 

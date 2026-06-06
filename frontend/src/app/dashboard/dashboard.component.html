@@ -1,25 +1,14 @@
 <div class="min-h-screen bg-slate-950 text-white p-8">
 
-    <div class="flex justify-between items-center mb-8">
+  <div class="mb-8">
+      <h1 class="text-4xl font-bold">
+          Final Space Dashboard
+      </h1>
 
-        <div>
-            <h1 class="text-4xl font-bold">
-                Final Space Dashboard
-            </h1>
-
-            <p class="text-slate-400 mt-2">
-                Role : {{ role }}
-            </p>
-        </div>
-
-        <button
-                (click)="logout()"
-                class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg"
-        >
-            Logout
-        </button>
-
-    </div>
+      <p class="text-slate-400 mt-2">
+          Vue d’ensemble des opérations spatiales.
+      </p>
+  </div>
 
     <div class="grid grid-cols-3 gap-6">
 
@@ -28,16 +17,26 @@
                 Missions
             </h2>
 
-            <button
-                    *ngIf="role === 'ADMIN' || role === 'OPERATEUR'"
-                    class="mt-4 rounded-lg bg-amber-500 px-4 py-2 font-semibold text-slate-950"
-            >
-                Créer une mission
-            </button>
-
-            <p *ngIf="role === 'LECTEUR'" class="mt-4 text-slate-400">
-                Mode lecture seule
+            <p class="mt-4 text-slate-400">
+                {{ role === 'LECTEUR' ? 'Mode lecture seule' : 'Gestion des missions opérationnelles' }}
             </p>
+
+            <div class="mt-4 flex gap-3">
+                <a
+                    routerLink="/missions"
+                    class="rounded-lg bg-slate-700 px-4 py-2 font-semibold text-white hover:bg-slate-600"
+                >
+                    {{ role === 'LECTEUR' ? 'Consulter les missions' : 'Voir les missions' }}
+                </a>
+
+                <a
+                    *ngIf="role === 'ADMIN' || role === 'OPERATEUR'"
+                    routerLink="/missions/create"
+                    class="rounded-lg bg-amber-500 px-4 py-2 font-semibold text-slate-950 hover:bg-amber-400"
+                >
+                    Créer une mission
+                </a>
+            </div>
         </div>
 
         <div class="bg-slate-900 p-6 rounded-2xl">

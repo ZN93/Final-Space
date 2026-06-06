@@ -1,0 +1,93 @@
+<section class="mission-detail-page">
+  <div class="page-actions">
+    <a routerLink="/missions" class="secondary-button">← Retour aux missions</a>
+  </div>
+
+  <div *ngIf="loading" class="state-card">
+    Chargement de la mission...
+  </div>
+
+  <div *ngIf="errorMessage" class="error-card">
+    {{ errorMessage }}
+  </div>
+
+  <div *ngIf="successMessage" class="success-card">
+    {{ successMessage }}
+  </div>
+
+  <div *ngIf="mission && !loading" class="detail-card">
+    <div class="detail-header">
+      <div>
+        <h1>{{ mission.name }}</h1>
+        <p>Gestion de la mission opérationnelle.</p>
+      </div>
+
+      <span
+        class="status"
+        [class.active]="mission.status === 'ACTIVE'"
+        [class.closed]="mission.status === 'CLOTUREE'"
+      >
+        {{ mission.status }}
+      </span>
+    </div>
+
+    <div *ngIf="isClosed()" class="info-card">
+      Cette mission est clôturée. Elle reste consultable mais ne peut plus être modifiée.
+    </div>
+
+    <form (ngSubmit)="updateMission()">
+      <div class="form-group">
+        <label for="name">Nom de la mission *</label>
+        <input
+          id="name"
+          name="name"
+          type="text"
+          [(ngModel)]="name"
+          [readonly]="isReadOnly()"
+          maxlength="150"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="description">Description</label>
+        <textarea
+          id="description"
+          name="description"
+          [(ngModel)]="description"
+          [readonly]="isReadOnly()"
+          maxlength="1000"
+          rows="5"
+        ></textarea>
+      </div>
+
+      <div class="metadata">
+        <span>Créée le : {{ mission.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+        <span *ngIf="mission.closedAt">
+          Clôturée le : {{ mission.closedAt | date:'dd/MM/yyyy HH:mm' }}
+        </span>
+      </div>
+
+      <div class="actions">
+        <button
+          *ngIf="canEdit()"
+          type="submit"
+          class="primary-button"
+          [disabled]="saving"
+        >
+          {{ saving ? 'Modification...' : 'Modifier la mission' }}
+        </button>
+
+        <button
+          *ngIf="canClose()"
+          type="button"
+          class="danger-button"
+          [disabled]="closing"
+          (click)="closeMission()"
+        >
+          {{ closing ? 'Clôture...' : 'Clôturer la mission' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</section>

@@ -1,4 +1,4 @@
-# US02 — Authentification JWT
+# US02 - Authentification JWT
 
 ## Objectif de validation
 

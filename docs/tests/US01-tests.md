@@ -1,4 +1,4 @@
-# US01 — Initialisation du projet
+# US01 - Initialisation du projet
 
 ## Objectif de validation
 

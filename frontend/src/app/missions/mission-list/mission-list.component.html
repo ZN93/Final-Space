@@ -1,0 +1,57 @@
+<section class="missions-page">
+  <div class="page-header">
+    <div>
+      <h1>Missions</h1>
+      <p>Consultation et gestion des missions opérationnelles.</p>
+    </div>
+
+    <a *ngIf="canCreateMission()" class="primary-button" routerLink="/missions/create">
+      Créer une mission
+    </a>
+  </div>
+
+  <div *ngIf="loading" class="state-card">
+    Chargement des missions...
+  </div>
+
+  <div *ngIf="errorMessage" class="error-card">
+    {{ errorMessage }}
+  </div>
+
+  <div *ngIf="!loading && !errorMessage && missions.length === 0" class="state-card">
+    Aucune mission disponible.
+  </div>
+
+  <div *ngIf="!loading && !errorMessage && missions.length > 0" class="mission-grid">
+    <article *ngFor="let mission of missions" class="mission-card">
+      <div class="mission-card-header">
+        <h2>{{ mission.name }}</h2>
+
+        <span
+          class="status"
+          [class.closed]="isClosed(mission)"
+          [class.active]="!isClosed(mission)"
+        >
+          {{ mission.status }}
+        </span>
+      </div>
+
+      <p class="description">
+        {{ mission.description || 'Aucune description renseignée.' }}
+      </p>
+
+      <div class="metadata">
+        <span>Créée le : {{ mission.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+        <span *ngIf="mission.closedAt">
+          Clôturée le : {{ mission.closedAt | date:'dd/MM/yyyy HH:mm' }}
+        </span>
+      </div>
+
+      <div class="actions">
+        <a [routerLink]="['/missions', mission.id]" class="secondary-button">
+          Voir détail
+        </a>
+      </div>
+    </article>
+  </div>
+</section>

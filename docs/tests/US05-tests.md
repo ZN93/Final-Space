@@ -1,10 +1,12 @@
-# US05 — Créer et gérer des missions
+# US05 - Créer et gérer des missions
 
 ## État de validation
 
-**Backend validé. Frontend et validation du parcours UI restant à réaliser.**
+## État de validation
 
-L'US05 ne doit être considérée comme totalement terminée qu'après développement et validation de l'interface Angular de gestion des missions.
+**US05 validée côté backend et frontend.**
+
+Le parcours complet de gestion des missions a été testé manuellement depuis l’interface Angular avec les rôles ADMIN, OPERATEUR et LECTEUR.
 
 ## Objectif de validation
 
@@ -39,7 +41,7 @@ Vérifier la gestion métier des missions :
 | RG-MIS-06 | ADMIN et OPERATEUR peuvent créer et modifier une mission |
 | RG-MIS-07 | LECTEUR accède uniquement à la consultation |
 
-## Cas de test unitaires automatisés — Service Mission
+## Cas de test unitaires automatisés - Service Mission
 
 | ID | Scénario | Résultat attendu | État |
 |---|---|---|---|
@@ -95,26 +97,38 @@ BUILD SUCCESS
 
 > La validation GitHub Actions de ces nouveaux tests sera obtenue après commit, push et exécution du workflow CI.
 
-## Tests UI restant à réaliser
+## Tests fonctionnels UI réalisés
+
+Les tests fonctionnels UI ont été validés manuellement le 06/06/2026.
 
 | ID | Scénario | Résultat attendu | État |
 |---|---|---|---|
-| US05-T18 | Créer une mission depuis l'interface Angular | Mission enregistrée et affichée dans la liste | À FAIRE |
-| US05-T19 | Afficher la liste des missions | Missions existantes consultables | À FAIRE |
-| US05-T20 | Modifier une mission active depuis l'interface | Informations mises à jour | À FAIRE |
-| US05-T21 | Clôturer une mission depuis l'interface après confirmation | Statut `CLOTUREE` affiché | À FAIRE |
-| US05-T22 | Consulter une mission clôturée | Page en lecture seule | À FAIRE |
-| US05-T23 | Se connecter en tant que LECTEUR | Boutons création, modification et clôture absents | À FAIRE |
+| US05-T18 | Créer une mission depuis l'interface Angular | Mission enregistrée et affichée dans la liste | PASS |
+| US05-T19 | Afficher la liste des missions | Missions existantes consultables | PASS |
+| US05-T20 | Modifier une mission active depuis l'interface | Informations mises à jour | PASS |
+| US05-T21 | Clôturer une mission depuis l'interface après confirmation | Statut `CLOTUREE` affiché | PASS |
+| US05-T22 | Consulter une mission clôturée | Page en lecture seule | PASS |
+| US05-T23 | Se connecter en tant que LECTEUR | Boutons création, modification et clôture absents | PASS |
+| US05-T24 | Accéder à `/missions/create` en tant que LECTEUR | Redirection vers la page `forbidden` | PASS |
+| US05-T25 | Accéder aux routes missions sans authentification | Redirection vers la page de connexion | PASS |
+| US05-T26 | Naviguer via le header global | Dashboard, Missions et Logout accessibles sans modifier l’URL | PASS |
 
-## Documentation restant à réaliser
+## Documentation réalisée
 
 | Élément | État |
 |---|---|
 | Documentation des tests backend | Réalisée |
-| Endpoints mission dans le README | À FAIRE |
-| Exemples de payload mission dans le README | À FAIRE |
-| Compte rendu de validation UI | À FAIRE après développement du frontend |
+| Documentation des tests frontend | Réalisée |
+| Endpoints mission dans le README | Réalisée |
+| Exemples de payload mission dans le README | Réalisée |
+| Compte rendu de validation UI | Réalisé |
 
 ## Conclusion
 
-Le backend de l'US05 est implémenté et validé par les tests unitaires et d'intégration disponibles. La fonctionnalité reste à finaliser côté frontend avant clôture définitive de l'US.
+L’US05 est validée.
+
+Le backend permet la création, la consultation, la modification et la clôture logique des missions.  
+Le frontend permet le parcours complet utilisateur : liste, création, détail, modification et clôture.  
+Les règles de sécurité sont respectées : ADMIN et OPERATEUR peuvent gérer les missions, tandis que LECTEUR dispose uniquement d’un accès en consultation.
+
+La mission clôturée reste consultable mais devient non modifiable.
