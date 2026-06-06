@@ -207,7 +207,7 @@ Le frontend Angular implémente :
 
 L’application permet de créer, consulter, modifier et clôturer des missions.
 
-Une mission représente un contexte opérationnel regroupant les futures ressources liées au suivi spatial : satellites, simulations, alertes, incidents et télémétrie.
+Une mission représente un contexte opérationnel regroupant les ressources liées au suivi spatial : satellites, simulations, alertes, incidents et télémétrie.
 
 ### Champs principaux
 
@@ -224,8 +224,8 @@ Une mission représente un contexte opérationnel regroupant les futures ressour
 
 | Statut | Description |
 |---|---|
-| ACTIVE | Mission utilisable pour les opérations |
-| CLOTUREE | Mission clôturée, consultable mais non modifiable |
+| `ACTIVE` | Mission utilisable pour les opérations |
+| `CLOTUREE` | Mission clôturée, consultable mais non modifiable |
 
 ---
 
@@ -235,11 +235,11 @@ Tous les endpoints missions nécessitent un token JWT.
 
 | Méthode | Endpoint | Description | Rôles autorisés |
 |---|---|---|---|
-| POST | `/api/missions` | Créer une mission | ADMIN, OPERATEUR |
-| GET | `/api/missions` | Lister les missions | ADMIN, OPERATEUR, LECTEUR |
-| GET | `/api/missions/{id}` | Consulter le détail d’une mission | ADMIN, OPERATEUR, LECTEUR |
-| PUT | `/api/missions/{id}` | Modifier une mission active | ADMIN, OPERATEUR |
-| POST | `/api/missions/{id}/close` | Clôturer une mission | ADMIN, OPERATEUR |
+| `POST` | `/api/missions` | Créer une mission | ADMIN, OPERATEUR |
+| `GET` | `/api/missions` | Lister les missions | ADMIN, OPERATEUR, LECTEUR |
+| `GET` | `/api/missions/{id}` | Consulter le détail d’une mission | ADMIN, OPERATEUR, LECTEUR |
+| `PUT` | `/api/missions/{id}` | Modifier une mission active | ADMIN, OPERATEUR |
+| `POST` | `/api/missions/{id}/close` | Clôturer une mission | ADMIN, OPERATEUR |
 
 ---
 
@@ -292,19 +292,6 @@ Payload :
 }
 ```
 
-Réponse :
-
-```json
-{
-  "id": 1,
-  "name": "Mission Artemis II",
-  "description": "Mission lunaire mise à jour",
-  "status": "ACTIVE",
-  "createdAt": "2026-06-06T11:53:00",
-  "closedAt": null
-}
-```
-
 ---
 
 ### Exemple de clôture d’une mission
@@ -343,30 +330,161 @@ Réponse :
 
 ---
 
-### Comportement frontend Missions
+## Gestion des satellites
 
-Le frontend Angular permet :
+L’application permet de créer, consulter, modifier et désactiver des satellites rattachés à une mission.
 
-* l’affichage de la liste des missions ;
-* la création d’une mission ;
-* la consultation du détail d’une mission ;
-* la modification d’une mission active ;
-* la clôture d’une mission avec confirmation ;
-* l’affichage en lecture seule d’une mission clôturée ;
-* le masquage des actions interdites pour le rôle LECTEUR ;
-* la navigation via un header global.
+Un satellite est un objet opérationnel associé à une mission. Il sert de support aux futures fonctionnalités de simulation orbitale, de télémétrie et de suivi d’incidents.
 
-| Rôle | Comportement UI |
+### Champs principaux
+
+| Champ | Description |
 |---|---|
-| ADMIN | Peut créer, modifier, clôturer et consulter |
-| OPERATEUR | Peut créer, modifier, clôturer et consulter |
-| LECTEUR | Peut uniquement consulter |
+| `id` | Identifiant technique du satellite |
+| `name` | Nom du satellite, obligatoire |
+| `status` | Statut du satellite |
+| `massKg` | Masse du satellite en kilogrammes |
+| `altitudeKm` | Altitude orbitale initiale en kilomètres |
+| `inclinationDeg` | Inclinaison orbitale en degrés |
+| `eccentricity` | Excentricité orbitale |
+| `createdAt` | Date de création |
+| `updatedAt` | Date de dernière mise à jour |
+| `missionId` | Identifiant de la mission associée |
+| `missionName` | Nom de la mission associée |
+
+### Statuts disponibles
+
+| Statut | Description |
+|---|---|
+| `ACTIF` | Satellite utilisable pour les opérations |
+| `INACTIF` | Satellite désactivé, consultable mais non modifiable |
+
+---
+
+### Endpoints Satellites
+
+Tous les endpoints satellites nécessitent un token JWT.
+
+| Méthode | Endpoint | Description | Rôles autorisés |
+|---|---|---|---|
+| `POST` | `/api/missions/{missionId}/satellites` | Créer un satellite dans une mission | ADMIN, OPERATEUR |
+| `GET` | `/api/missions/{missionId}/satellites` | Lister les satellites d’une mission | ADMIN, OPERATEUR, LECTEUR |
+| `GET` | `/api/satellites/{id}` | Consulter le détail d’un satellite | ADMIN, OPERATEUR, LECTEUR |
+| `PUT` | `/api/satellites/{id}` | Modifier un satellite actif | ADMIN, OPERATEUR |
+| `POST` | `/api/satellites/{id}/disable` | Désactiver un satellite | ADMIN, OPERATEUR |
+
+---
+
+### Exemple de création d’un satellite
+
+```http
+POST /api/missions/4/satellites
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+Payload :
+
+```json
+{
+  "name": "LunaSat-01",
+  "massKg": 850,
+  "altitudeKm": 400,
+  "inclinationDeg": 51.6,
+  "eccentricity": 0.001
+}
+```
+
+Réponse :
+
+```json
+{
+  "id": 1,
+  "name": "LunaSat-01",
+  "status": "ACTIF",
+  "massKg": 850,
+  "altitudeKm": 400,
+  "inclinationDeg": 51.6,
+  "eccentricity": 0.001,
+  "createdAt": "2026-06-06T13:41:00",
+  "updatedAt": "2026-06-06T13:41:00",
+  "missionId": 4,
+  "missionName": "Mission to the MOOOOON"
+}
+```
+
+---
+
+### Exemple de modification d’un satellite
+
+```http
+PUT /api/satellites/1
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+Payload :
+
+```json
+{
+  "name": "LunaSat-01 Updated",
+  "massKg": 900,
+  "altitudeKm": 420,
+  "inclinationDeg": 52,
+  "eccentricity": 0.002
+}
+```
+
+---
+
+### Exemple de désactivation d’un satellite
+
+```http
+POST /api/satellites/1/disable
+Authorization: Bearer <token>
+```
+
+Réponse :
+
+```json
+{
+  "id": 1,
+  "name": "LunaSat-01 Updated",
+  "status": "INACTIF",
+  "massKg": 900,
+  "altitudeKm": 420,
+  "inclinationDeg": 52,
+  "eccentricity": 0.002,
+  "createdAt": "2026-06-06T13:41:00",
+  "updatedAt": "2026-06-06T14:10:00",
+  "missionId": 4,
+  "missionName": "Mission to the MOOOOON"
+}
+```
+
+---
+
+### Règles métier Satellites
+
+| Règle | Description |
+|---|---|
+| Mission obligatoire | Un satellite doit être rattaché à une mission |
+| Mission unique | Un satellite appartient à une seule mission |
+| Mission active | Un satellite ne peut être créé que dans une mission active |
+| Mission clôturée | Une mission clôturée refuse la création de satellites |
+| Création | Un satellite créé possède automatiquement le statut `ACTIF` |
+| Modification | Seuls les satellites actifs peuvent être modifiés |
+| Désactivation | La désactivation passe le statut à `INACTIF` |
+| Suppression | La suppression physique n’est pas autorisée |
+| Satellite inactif | Un satellite inactif reste consultable mais devient en lecture seule |
 
 ---
 
 ## Tests
 
-Le projet dispose de tests backend automatisés couvrant les premières user stories.
+Le projet contient des tests automatisés côté backend.
+
+### Tests backend
 
 Commande :
 
@@ -375,46 +493,43 @@ cd backend
 ./mvnw clean test
 ```
 
-Résultat validé :
-
-```text
-Tests run: 21, Failures: 0, Errors: 0, Skipped: 0
-BUILD SUCCESS
-```
-
 Les tests couvrent notamment :
 
-* le démarrage du contexte Spring ;
-* l’authentification JWT ;
-* la protection des endpoints ;
-* les règles RBAC ;
-* les règles métier de gestion des missions.
+- l’authentification ;
+- la santé de l’application ;
+- les règles RBAC ;
+- la gestion des missions ;
+- la gestion des satellites ;
+- les règles métier liées aux missions clôturées ;
+- les règles métier liées aux satellites inactifs.
 
-La documentation détaillée des tests est disponible dans :
+### Tests frontend
 
-```text
-docs/tests/
+Commande :
+
+```bash
+cd frontend
+npm run build
 ```
+
+Le build Angular permet de valider que l’application frontend compile correctement.
 
 ---
 
 ## Intégration continue
 
-Le projet utilise GitHub Actions pour vérifier automatiquement :
+Le projet utilise GitHub Actions avec un workflow CI minimal.
 
-* le build backend ;
-* l’exécution des tests backend ;
-* le build frontend Angular.
+La CI vérifie :
 
-La CI doit être verte avant intégration dans `main`.
+- la compilation et les tests backend ;
+- la compilation frontend.
 
----
+Workflow :
 
-## Logging
-
-Le backend utilise **Log4j2** pour la gestion des logs.
-
-Un log est généré à chaque appel de l’endpoint `/api/health`, permettant de vérifier le bon fonctionnement du système de journalisation.
+```text
+.github/workflows/ci.yml
+```
 
 ---
 
@@ -422,22 +537,37 @@ Un log est généré à chaque appel de l’endpoint `/api/health`, permettant d
 
 À ce stade :
 
-* frontend opérationnel ;
-* backend opérationnel ;
-* authentification JWT opérationnelle ;
-* RBAC opérationnel ;
-* gestion des missions terminée ;
-* tests backend automatisés en place ;
-* CI minimale opérationnelle.
+- frontend opérationnel ;
+- backend opérationnel ;
+- authentification JWT opérationnelle ;
+- RBAC opérationnel ;
+- gestion des missions opérationnelle ;
+- gestion des satellites opérationnelle ;
+- tests backend en place ;
+- CI GitHub Actions en place.
 
 ---
 
-## Prochaine étape
+## Fonctionnalités réalisées
 
-Implémentation des fonctionnalités métier suivantes :
+| Fonctionnalité | État |
+|---|---|
+| Authentification JWT | Réalisée |
+| Gestion des rôles RBAC | Réalisée |
+| Protection des routes frontend | Réalisée |
+| Gestion des missions | Réalisée |
+| Gestion des satellites | Réalisée |
+| Tests backend | Réalisés |
+| CI minimale | Réalisée |
 
-* gestion des satellites ;
-* dashboard enrichi ;
-* gestion des incidents ;
-* alertes ;
-* télémétrie.
+---
+
+## Prochaines étapes
+
+Les prochaines fonctionnalités métier prévues sont :
+
+- gestion des simulations orbitales ;
+- import et analyse de télémétrie ;
+- gestion des alertes ;
+- gestion des incidents ;
+- génération de rapports.
