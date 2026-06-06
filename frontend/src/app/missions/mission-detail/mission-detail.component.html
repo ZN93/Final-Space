@@ -69,6 +69,13 @@
       </div>
 
       <div class="actions">
+        <a
+          *ngIf="mission"
+          [routerLink]="['/missions', mission.id, 'dashboard']"
+          class="secondary-button"
+        >
+          Voir dashboard
+        </a>
         <button
           *ngIf="canEdit()"
           type="submit"
