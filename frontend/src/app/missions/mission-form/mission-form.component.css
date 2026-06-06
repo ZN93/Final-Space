@@ -1,0 +1,96 @@
+.mission-form-page {
+  min-height: 100vh;
+  padding: 32px;
+  background: #020617;
+  color: white;
+}
+
+.form-card {
+  max-width: 720px;
+  margin: 0 auto;
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 16px;
+  padding: 28px;
+}
+
+.form-header {
+  margin-bottom: 24px;
+}
+
+.form-header h1 {
+  margin: 0 0 8px;
+  font-size: 30px;
+}
+
+.form-header p {
+  margin: 0;
+  color: #94a3b8;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+label {
+  font-weight: 700;
+}
+
+input,
+textarea {
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: #020617;
+  color: white;
+  font: inherit;
+}
+
+input:focus,
+textarea:focus {
+  outline: none;
+  border-color: #f59e0b;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.primary-button,
+.secondary-button {
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.primary-button {
+  background: #f59e0b;
+  color: #020617;
+}
+
+.primary-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.secondary-button {
+  background: #1e293b;
+  color: white;
+}
+
+.error-card {
+  border: 1px solid #ef4444;
+  border-radius: 10px;
+  padding: 12px;
+  color: #fecaca;
+  background: rgba(239, 68, 68, 0.08);
+}

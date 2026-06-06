@@ -1,0 +1,46 @@
+<header *ngIf="isAuthenticated()" class="app-header">
+  <div class="brand" routerLink="/dashboard">
+    Final Space
+  </div>
+
+  <nav class="nav-links">
+    <a
+      routerLink="/dashboard"
+      routerLinkActive="active"
+      class="nav-link"
+    >
+      Dashboard
+    </a>
+
+    <a
+      routerLink="/missions"
+      routerLinkActive="active"
+      class="nav-link"
+    >
+      Missions
+    </a>
+
+    <a
+      class="nav-link disabled"
+      title="Fonctionnalité à venir"
+    >
+      Satellites
+    </a>
+
+    <a
+      *ngIf="isAdmin()"
+      class="nav-link disabled"
+      title="Fonctionnalité à venir"
+    >
+      Administration
+    </a>
+  </nav>
+
+  <div class="user-zone">
+    <span class="role-badge">{{ getRole() }}</span>
+
+    <button type="button" class="logout-button" (click)="logout()">
+      Logout
+    </button>
+  </div>
+</header>

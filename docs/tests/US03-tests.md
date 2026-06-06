@@ -1,4 +1,4 @@
-# US03 — Gestion des rôles RBAC
+# US03 - Gestion des rôles RBAC
 
 ## Objectif de validation
 

@@ -1,0 +1,47 @@
+<section class="mission-form-page">
+  <div class="form-card">
+    <div class="form-header">
+      <h1>Créer une mission</h1>
+      <p>Renseignez les informations principales de la mission.</p>
+    </div>
+
+    <form (ngSubmit)="createMission()">
+      <div class="form-group">
+        <label for="name">Nom de la mission *</label>
+        <input
+          id="name"
+          name="name"
+          type="text"
+          [(ngModel)]="name"
+          placeholder="Ex : Mission Artemis"
+          maxlength="150"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="description">Description</label>
+        <textarea
+          id="description"
+          name="description"
+          [(ngModel)]="description"
+          placeholder="Description de la mission"
+          maxlength="1000"
+          rows="5"
+        ></textarea>
+      </div>
+
+      <div *ngIf="errorMessage" class="error-card">
+        {{ errorMessage }}
+      </div>
+
+      <div class="actions">
+        <a routerLink="/missions" class="secondary-button">Annuler</a>
+
+        <button type="submit" class="primary-button" [disabled]="loading">
+          {{ loading ? 'Création...' : 'Créer la mission' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</section>
