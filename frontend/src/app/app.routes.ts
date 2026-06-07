@@ -6,6 +6,7 @@ import { MissionFormComponent } from './missions/mission-form/mission-form.compo
 import { MissionDetailComponent } from './missions/mission-detail/mission-detail.component';
 import { MissionDashboardPageComponent } from './mission-dashboard/mission-dashboard-page/mission-dashboard-page.component';
 import { MissionAlertListComponent } from './alerts/mission-alert-list/mission-alert-list.component';
+import { MissionIncidentListComponent } from './incidents/mission-incident-list/mission-incident-list.component';
 
 export const routes: Routes = [
   {
@@ -37,6 +38,11 @@ export const routes: Routes = [
     path: 'missions/:id/alerts',
     canActivate: [authGuard],
     component: MissionAlertListComponent
+  },
+  {
+    path: 'missions/:id/incidents',
+    canActivate: [authGuard],
+    component: MissionIncidentListComponent
   },
   {
     path: 'missions/:id',

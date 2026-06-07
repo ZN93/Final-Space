@@ -743,6 +743,277 @@ Le frontend Angular permet :
 
 ---
 
+## Gestion des incidents
+
+L’application permet de créer, consulter, modifier, suivre et clôturer des incidents opérationnels rattachés à une mission.
+
+Un incident représente un problème opérationnel nécessitant un suivi dans le temps.  
+Il peut être créé manuellement ou être lié à une alerte existante.
+
+Dans le MVP actuel, le suivi des commentaires est simplifié avec un champ `notes`.
+
+### Champs principaux
+
+| Champ | Description |
+|---|---|
+| `id` | Identifiant technique de l’incident |
+| `missionId` | Identifiant de la mission associée |
+| `missionName` | Nom de la mission associée |
+| `satelliteId` | Identifiant du satellite concerné, optionnel |
+| `satelliteName` | Nom du satellite concerné, optionnel |
+| `alertId` | Identifiant de l’alerte liée, optionnel |
+| `title` | Titre de l’incident |
+| `description` | Description détaillée |
+| `notes` | Notes de suivi MVP |
+| `severity` | Gravité de l’incident |
+| `status` | Statut de l’incident |
+| `createdAt` | Date de création |
+| `updatedAt` | Date de dernière mise à jour |
+| `closedAt` | Date de clôture, si applicable |
+| `createdBy` | Utilisateur ayant créé l’incident |
+
+### Statuts disponibles
+
+| Statut | Description |
+|---|---|
+| `OUVERT` | Incident créé, non encore traité |
+| `EN_COURS` | Incident en cours de traitement |
+| `CLOTURE` | Incident clôturé, consultable en lecture seule |
+
+### Gravités disponibles
+
+| Gravité | Description |
+|---|---|
+| `FAIBLE` | Incident de faible gravité |
+| `MOYENNE` | Incident de gravité moyenne |
+| `ELEVEE` | Incident de gravité élevée |
+
+---
+
+### Endpoints Incidents
+
+Tous les endpoints incidents nécessitent un token JWT.
+
+| Méthode | Endpoint | Description | Rôles autorisés |
+|---|---|---|---|
+| `POST` | `/api/missions/{missionId}/incidents` | Créer un incident dans une mission | ADMIN, OPERATEUR |
+| `GET` | `/api/missions/{missionId}/incidents` | Lister les incidents d’une mission | ADMIN, OPERATEUR, LECTEUR |
+| `GET` | `/api/incidents/{id}` | Consulter le détail d’un incident | ADMIN, OPERATEUR, LECTEUR |
+| `PUT` | `/api/incidents/{id}` | Modifier un incident non clôturé | ADMIN, OPERATEUR |
+| `POST` | `/api/incidents/{id}/status` | Changer le statut d’un incident | ADMIN, OPERATEUR |
+| `POST` | `/api/incidents/{id}/close` | Clôturer explicitement un incident | ADMIN, OPERATEUR |
+
+Paramètre optionnel pour la liste :
+
+| Paramètre | Valeurs | Description |
+|---|---|---|
+| `status` | `OUVERT`, `EN_COURS`, `CLOTURE` | Filtrer les incidents par statut |
+
+---
+
+### Exemple de création d’un incident
+
+```http
+POST /api/missions/4/incidents
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+Payload :
+
+```json
+{
+  "satelliteId": null,
+  "alertId": null,
+  "title": "Incident de télémétrie",
+  "description": "Anomalie détectée sur les données de température.",
+  "notes": "Analyse initiale en cours.",
+  "severity": "MOYENNE"
+}
+```
+
+Réponse :
+
+```json
+{
+  "id": 1,
+  "missionId": 4,
+  "missionName": "Mission Artemis",
+  "satelliteId": null,
+  "satelliteName": null,
+  "alertId": null,
+  "title": "Incident de télémétrie",
+  "description": "Anomalie détectée sur les données de température.",
+  "notes": "Analyse initiale en cours.",
+  "severity": "MOYENNE",
+  "status": "OUVERT",
+  "createdAt": "2026-06-07T14:10:00",
+  "updatedAt": "2026-06-07T14:10:00",
+  "closedAt": null,
+  "createdBy": "admin@finalspace.com"
+}
+```
+
+---
+
+### Exemple de création d’un incident lié à une alerte
+
+```http
+POST /api/missions/4/incidents
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+Payload :
+
+```json
+{
+  "satelliteId": 10,
+  "alertId": 1,
+  "title": "Incident thermique",
+  "description": "Incident créé depuis une alerte de température élevée.",
+  "notes": "Vérification du satellite en cours.",
+  "severity": "ELEVEE"
+}
+```
+
+---
+
+### Exemple de modification d’un incident
+
+```http
+PUT /api/incidents/1
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+Payload :
+
+```json
+{
+  "title": "Incident thermique mis à jour",
+  "description": "Analyse approfondie de l’anomalie thermique.",
+  "notes": "Contrôle des capteurs en cours.",
+  "severity": "ELEVEE"
+}
+```
+
+Réponse :
+
+```json
+{
+  "id": 1,
+  "missionId": 4,
+  "missionName": "Mission Artemis",
+  "satelliteId": 10,
+  "satelliteName": "LunaSat-01",
+  "alertId": 1,
+  "title": "Incident thermique mis à jour",
+  "description": "Analyse approfondie de l’anomalie thermique.",
+  "notes": "Contrôle des capteurs en cours.",
+  "severity": "ELEVEE",
+  "status": "OUVERT",
+  "createdAt": "2026-06-07T14:10:00",
+  "updatedAt": "2026-06-07T14:25:00",
+  "closedAt": null,
+  "createdBy": "admin@finalspace.com"
+}
+```
+
+---
+
+### Exemple de changement de statut
+
+```http
+POST /api/incidents/1/status
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+Payload :
+
+```json
+{
+  "status": "EN_COURS"
+}
+```
+
+---
+
+### Exemple de clôture d’un incident
+
+```http
+POST /api/incidents/1/close
+Authorization: Bearer <token>
+```
+
+Réponse :
+
+```json
+{
+  "id": 1,
+  "missionId": 4,
+  "missionName": "Mission Artemis",
+  "satelliteId": 10,
+  "satelliteName": "LunaSat-01",
+  "alertId": 1,
+  "title": "Incident thermique mis à jour",
+  "description": "Analyse approfondie de l’anomalie thermique.",
+  "notes": "Contrôle terminé.",
+  "severity": "ELEVEE",
+  "status": "CLOTURE",
+  "createdAt": "2026-06-07T14:10:00",
+  "updatedAt": "2026-06-07T14:45:00",
+  "closedAt": "2026-06-07T14:45:00",
+  "createdBy": "admin@finalspace.com"
+}
+```
+
+---
+
+### Règles métier Incidents
+
+| Règle | Description |
+|---|---|
+| Mission obligatoire | Un incident doit être rattaché à une mission |
+| Mission active | Un incident ne peut être créé que dans une mission active |
+| Mission clôturée | Les incidents restent consultables mais ne sont plus modifiables |
+| Satellite optionnel | Un incident peut être rattaché à un satellite |
+| Cohérence satellite | Le satellite doit appartenir à la mission de l’incident |
+| Alerte optionnelle | Un incident peut être lié à une alerte |
+| Cohérence alerte | L’alerte doit appartenir à la mission de l’incident |
+| Création | Un incident créé possède automatiquement le statut `OUVERT` |
+| Transitions statut | `OUVERT` → `EN_COURS` → `CLOTURE` |
+| Clôture directe | Un incident `OUVERT` peut être clôturé directement |
+| Incident clôturé | Un incident clôturé est consultable en lecture seule |
+| Suppression | La suppression physique d’un incident n’est pas autorisée |
+
+---
+
+### Comportement frontend Incidents
+
+Le frontend Angular permet :
+
+- d’accéder à la liste des incidents depuis une mission ;
+- d’accéder à la liste des incidents depuis le dashboard mission ;
+- de lister les incidents d’une mission active ou clôturée ;
+- de filtrer les incidents par statut ;
+- de créer un incident sur une mission active ;
+- de modifier un incident non clôturé ;
+- de passer un incident `OUVERT` à `EN_COURS` ;
+- de clôturer un incident ;
+- d’afficher les incidents clôturés en lecture seule ;
+- d’afficher les incidents d’une mission clôturée en lecture seule ;
+- de masquer les actions interdites pour le rôle LECTEUR.
+
+| Rôle | Comportement UI |
+|---|---|
+| ADMIN | Peut créer, modifier, changer le statut, clôturer et consulter |
+| OPERATEUR | Peut créer, modifier, changer le statut, clôturer et consulter |
+| LECTEUR | Peut uniquement consulter |
+
+---
+
 ## Tests
 
 Le projet contient des tests automatisés côté backend.
@@ -812,6 +1083,7 @@ Workflow :
 - gestion des satellites opérationnelle ;
 - consultation des alertes opérationnelle ;
 - acquittement des alertes opérationnel ;
+- gestion des incidents opérationnelle ;
 - tests backend en place ;
 - CI GitHub Actions en place.
 
@@ -828,6 +1100,7 @@ Workflow :
 | Gestion des satellites | Réalisée |
 | Consultation des alertes | Réalisée |
 | Acquittement des alertes | Réalisée |
+| Gestion des incidents | Réalisée |
 | Tests backend | Réalisés |
 | CI minimale | Réalisée |
 

@@ -43,6 +43,13 @@
         >
           Voir alertes
         </a>
+        <a
+          *ngIf="dashboard"
+          [routerLink]="['/missions', dashboard.missionId, 'incidents']"
+          class="secondary-button"
+        >
+          Voir incidents
+        </a>
       </div>
     </div>
 

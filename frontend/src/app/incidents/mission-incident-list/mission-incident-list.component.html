@@ -1,0 +1,301 @@
+<section class="incidents-page">
+  <div class="page-actions">
+    <a [routerLink]="['/missions', missionId]" class="secondary-button">
+      ← Retour mission
+    </a>
+
+    <a [routerLink]="['/missions', missionId, 'dashboard']" class="secondary-button">
+      Dashboard mission
+    </a>
+
+    <a [routerLink]="['/missions', missionId, 'alerts']" class="secondary-button">
+      Alertes mission
+    </a>
+  </div>
+
+  <div class="incidents-header">
+    <div>
+      <h1>Incidents mission</h1>
+      <p>Création, suivi et consultation des incidents opérationnels.</p>
+    </div>
+
+    <div class="header-actions">
+      <button type="button" class="primary-button" (click)="refresh()">
+        Rafraîchir
+      </button>
+
+      <button
+        *ngIf="canCreateIncident()"
+        type="button"
+        class="primary-button"
+        (click)="toggleCreateForm()"
+      >
+        {{ showCreateForm ? 'Fermer le formulaire' : 'Créer un incident' }}
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="isMissionClosed()" class="info-card">
+    Cette mission est clôturée. Les incidents restent consultables, mais aucun nouvel incident ne peut être créé.
+  </div>
+
+  <form
+    *ngIf="showCreateForm"
+    class="incident-form"
+    (ngSubmit)="createIncident()"
+  >
+    <h2>Nouvel incident</h2>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="title">Titre *</label>
+        <input
+          id="title"
+          name="title"
+          type="text"
+          [(ngModel)]="title"
+          maxlength="150"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="severity">Gravité</label>
+        <select
+          id="severity"
+          name="severity"
+          [(ngModel)]="severity"
+        >
+          <option value="FAIBLE">FAIBLE</option>
+          <option value="MOYENNE">MOYENNE</option>
+          <option value="ELEVEE">ELEVEE</option>
+        </select>
+      </div>
+
+      <div class="form-group full-width">
+        <label for="description">Description</label>
+        <textarea
+          id="description"
+          name="description"
+          rows="4"
+          [(ngModel)]="description"
+        ></textarea>
+      </div>
+
+      <div class="form-group full-width">
+        <label for="notes">Notes de suivi</label>
+        <textarea
+          id="notes"
+          name="notes"
+          rows="3"
+          [(ngModel)]="notes"
+        ></textarea>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="secondary-button" (click)="toggleCreateForm()">
+        Annuler
+      </button>
+
+      <button type="submit" class="primary-button" [disabled]="saving">
+        {{ saving ? 'Création...' : 'Créer l’incident' }}
+      </button>
+    </div>
+  </form>
+
+  <div class="filters-card">
+    <label for="statusFilter">Filtrer par statut</label>
+
+    <select
+      id="statusFilter"
+      name="statusFilter"
+      [(ngModel)]="selectedStatus"
+      (change)="onStatusChange()"
+    >
+      <option value="ALL">Tous</option>
+      <option value="OUVERT">Ouverts</option>
+      <option value="EN_COURS">En cours</option>
+      <option value="CLOTURE">Clôturés</option>
+    </select>
+  </div>
+
+  <div *ngIf="loading" class="state-card">
+    Chargement des incidents...
+  </div>
+
+  <div *ngIf="errorMessage" class="error-card">
+    {{ errorMessage }}
+  </div>
+
+  <div *ngIf="successMessage" class="success-card">
+    {{ successMessage }}
+  </div>
+
+  <div *ngIf="!loading && !errorMessage && incidents.length === 0" class="state-card">
+    Aucun incident trouvé pour cette mission.
+  </div>
+
+  <div *ngIf="!loading && !errorMessage && incidents.length > 0" class="incident-table-wrapper">
+    <table class="incident-table">
+      <thead>
+      <tr>
+        <th>Titre</th>
+        <th>Gravité</th>
+        <th>Statut</th>
+        <th>Satellite</th>
+        <th>Alerte</th>
+        <th>Créé le</th>
+        <th>Créé par</th>
+        <th>Clôture</th>
+        <th>Actions</th>
+      </tr>
+      </thead>
+
+      <tbody>
+        <tr *ngFor="let incident of incidents">
+          <td>
+            <strong>{{ incident.title }}</strong>
+            <p>{{ incident.description || '-' }}</p>
+          </td>
+
+          <td>
+            <span
+              class="severity"
+              [class.low]="incident.severity === 'FAIBLE'"
+              [class.medium]="incident.severity === 'MOYENNE'"
+              [class.high]="incident.severity === 'ELEVEE'"
+            >
+              {{ incident.severity }}
+            </span>
+          </td>
+
+          <td>
+            <span
+              class="status"
+              [class.open]="incident.status === 'OUVERT'"
+              [class.progress]="incident.status === 'EN_COURS'"
+              [class.closed]="incident.status === 'CLOTURE'"
+            >
+              {{ incident.status }}
+            </span>
+          </td>
+
+          <td>{{ incident.satelliteName || 'Mission' }}</td>
+          <td>{{ incident.alertId || '-' }}</td>
+          <td>{{ incident.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+          <td>{{ incident.createdBy }}</td>
+
+          <td>
+            <span *ngIf="incident.closedAt">
+              {{ incident.closedAt | date:'dd/MM/yyyy HH:mm' }}
+            </span>
+
+            <span *ngIf="!incident.closedAt" class="readonly-label">
+              Non clôturé
+            </span>
+          </td>
+
+          <td>
+            <div *ngIf="canEditIncident(incident)" class="row-actions">
+              <button
+                  type="button"
+                  class="small-secondary-button"
+                  (click)="startEditIncident(incident)"
+              >
+                  Modifier
+              </button>
+
+              <button
+                  *ngIf="canMoveToInProgress(incident)"
+                  type="button"
+                  class="small-primary-button"
+                  [disabled]="processingIncidentId === incident.id"
+                  (click)="moveToInProgress(incident)"
+              >
+                  En cours
+              </button>
+
+              <button
+                  type="button"
+                  class="small-danger-button"
+                  [disabled]="processingIncidentId === incident.id"
+                  (click)="closeIncident(incident)"
+              >
+                  Clôturer
+              </button>
+            </div>
+
+            <span *ngIf="!canEditIncident(incident)" class="readonly-label">
+                Lecture seule
+            </span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <form
+    *ngIf="editingIncident"
+    class="incident-form"
+    (ngSubmit)="updateIncident()"
+  >
+    <h2>Modifier l’incident</h2>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="editTitle">Titre *</label>
+        <input
+          id="editTitle"
+          name="editTitle"
+          type="text"
+          [(ngModel)]="editTitle"
+          maxlength="150"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="editSeverity">Gravité</label>
+        <select
+          id="editSeverity"
+          name="editSeverity"
+          [(ngModel)]="editSeverity"
+        >
+          <option value="FAIBLE">FAIBLE</option>
+          <option value="MOYENNE">MOYENNE</option>
+          <option value="ELEVEE">ELEVEE</option>
+        </select>
+      </div>
+
+      <div class="form-group full-width">
+        <label for="editDescription">Description</label>
+        <textarea
+          id="editDescription"
+          name="editDescription"
+          rows="4"
+          [(ngModel)]="editDescription"
+        ></textarea>
+      </div>
+
+      <div class="form-group full-width">
+        <label for="editNotes">Notes de suivi</label>
+        <textarea
+          id="editNotes"
+          name="editNotes"
+          rows="3"
+          [(ngModel)]="editNotes"
+        ></textarea>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="secondary-button" (click)="cancelEditIncident()">
+        Annuler
+      </button>
+
+      <button type="submit" class="primary-button" [disabled]="saving">
+        {{ saving ? 'Modification...' : 'Modifier l’incident' }}
+      </button>
+    </div>
+  </form>
+</section>

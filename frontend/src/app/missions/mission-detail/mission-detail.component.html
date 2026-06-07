@@ -83,6 +83,13 @@
         >
           Voir alertes
         </a>
+        <a
+          *ngIf="mission"
+          [routerLink]="['/missions', mission.id, 'incidents']"
+          class="secondary-button"
+        >
+          Voir incidents
+        </a>
         <button
           *ngIf="canEdit()"
           type="submit"
