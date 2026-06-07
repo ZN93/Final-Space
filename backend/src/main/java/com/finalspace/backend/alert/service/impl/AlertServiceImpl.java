@@ -12,6 +12,8 @@ import com.finalspace.backend.satellite.Satellite;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.finalspace.backend.common.exception.BusinessException;
+import java.time.LocalDateTime;
 
 import java.util.List;
 
@@ -61,5 +63,24 @@ public class AlertServiceImpl implements AlertService {
                 alert.getAckAt(),
                 alert.getAckBy()
         );
+    }
+
+    @Override
+    @Transactional
+    public AlertResponse acknowledge(Long alertId, String acknowledgedBy) {
+        Alert alert = alertRepository.findById(alertId)
+                .orElseThrow(() -> new ResourceNotFoundException("Alerte introuvable"));
+
+        if (alert.getStatus() == AlertStatus.ACQUITTEE) {
+            throw new BusinessException("Alerte déjà acquittée");
+        }
+
+        alert.setStatus(AlertStatus.ACQUITTEE);
+        alert.setAckAt(LocalDateTime.now());
+        alert.setAckBy(acknowledgedBy);
+
+        Alert savedAlert = alertRepository.save(alert);
+
+        return toResponse(savedAlert);
     }
 }
