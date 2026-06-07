@@ -216,4 +216,50 @@ class AlertServiceImplTest {
         assertNotNull(response.ackAt());
         assertEquals("admin@finalspace.com", response.ackBy());
     }
+
+    @Test
+    void shouldAcknowledgeActiveAlert() {
+        when(alertRepository.findById(100L)).thenReturn(java.util.Optional.of(activeAlert));
+        when(alertRepository.save(activeAlert)).thenReturn(activeAlert);
+
+        AlertResponse response = alertService.acknowledge(100L, "admin@finalspace.com");
+
+        assertEquals(100L, response.id());
+        assertEquals(AlertStatus.ACQUITTEE, response.status());
+        assertNotNull(response.ackAt());
+        assertEquals("admin@finalspace.com", response.ackBy());
+
+        verify(alertRepository).findById(100L);
+        verify(alertRepository).save(activeAlert);
+    }
+
+    @Test
+    void shouldRejectAcknowledgementWhenAlertDoesNotExist() {
+        when(alertRepository.findById(999L)).thenReturn(java.util.Optional.empty());
+
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
+                () -> alertService.acknowledge(999L, "admin@finalspace.com")
+        );
+
+        assertEquals("Alerte introuvable", exception.getMessage());
+
+        verify(alertRepository).findById(999L);
+        verify(alertRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldRejectAcknowledgementWhenAlertIsAlreadyAcknowledged() {
+        when(alertRepository.findById(101L)).thenReturn(java.util.Optional.of(acknowledgedAlert));
+
+        com.finalspace.backend.common.exception.BusinessException exception = assertThrows(
+                com.finalspace.backend.common.exception.BusinessException.class,
+                () -> alertService.acknowledge(101L, "admin@finalspace.com")
+        );
+
+        assertEquals("Alerte déjà acquittée", exception.getMessage());
+
+        verify(alertRepository).findById(101L);
+        verify(alertRepository, never()).save(any());
+    }
 }

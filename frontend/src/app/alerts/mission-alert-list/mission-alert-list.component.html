@@ -43,6 +43,10 @@
     {{ errorMessage }}
   </div>
 
+  <div *ngIf="successMessage" class="success-card">
+    {{ successMessage }}
+  </div>
+
   <div *ngIf="!loading && !errorMessage && alerts.length === 0" class="state-card">
     Aucune alerte trouvée pour cette mission.
   </div>
@@ -59,6 +63,7 @@
         <th>Message</th>
         <th>Créée le</th>
         <th>Acquittement</th>
+        <th>Actions</th>
       </tr>
       </thead>
 
@@ -93,6 +98,23 @@
           <span *ngIf="!alert.ackAt" class="readonly-label">
             Non acquittée
           </span>
+        </td>
+
+        <td>
+          <button
+              *ngIf="canAcknowledge(alert)"
+              type="button"
+              class="small-primary-button"
+              [disabled]="acknowledgingAlertId === alert.id"
+              (click)="acknowledgeAlert(alert)"
+          >
+              {{ acknowledgingAlertId === alert.id ? 'Acquittement...' : 'Acquitter' }}
+          </button>
+
+          <span *ngIf="!canAcknowledge(alert)" class="readonly-label">
+              Lecture seule
+          </span>
+
         </td>
       </tr>
       </tbody>

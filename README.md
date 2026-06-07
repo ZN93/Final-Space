@@ -609,6 +609,7 @@ Tous les rôles authentifiés peuvent consulter les alertes d’une mission.
 | Méthode | Endpoint | Description | Rôles autorisés |
 |---|---|---|---|
 | `GET` | `/api/missions/{missionId}/alerts` | Lister les alertes d’une mission | ADMIN, OPERATEUR, LECTEUR |
+| `POST` | `/api/alerts/{alertId}/ack` | Acquitter une alerte active | ADMIN, OPERATEUR |
 
 Paramètre optionnel :
 
@@ -646,6 +647,48 @@ Réponse :
   }
 ]
 ```
+
+---
+
+### Exemple d’acquittement d’une alerte
+
+```http
+POST /api/alerts/1/ack
+Authorization: Bearer <token>
+```
+
+Réponse :
+
+```json
+{
+  "id": 1,
+  "missionId": 4,
+  "missionName": "Mission Artemis",
+  "satelliteId": 10,
+  "satelliteName": "LunaSat-01",
+  "metric": "temperature",
+  "type": "THERMAL_ANOMALY",
+  "severity": "ELEVEE",
+  "status": "ACQUITTEE",
+  "message": "Température satellite supérieure au seuil",
+  "createdAt": "2026-06-07T00:02:00",
+  "ackAt": "2026-06-07T12:55:00",
+  "ackBy": "admin@finalspace.com"
+}
+```
+
+---
+
+### Règles métier d’acquittement
+
+| Règle | Description |
+|---|---|
+| Alerte active | Seules les alertes `ACTIVE` peuvent être acquittées |
+| Changement de statut | L’acquittement passe le statut à `ACQUITTEE` |
+| Traçabilité | La date `ackAt` et l’utilisateur `ackBy` sont enregistrés |
+| Ré-acquittement | Une alerte déjà acquittée ne peut pas être réacquittée |
+| Lecteur | Le rôle LECTEUR ne peut pas acquitter une alerte |
+| Incident | L’acquittement ne crée pas automatiquement d’incident |
 
 ---
 
@@ -721,6 +764,8 @@ Les tests couvrent notamment :
 - la gestion des missions ;
 - la gestion des satellites ;
 - la consultation des alertes ;
+- l’acquittement des alertes ;
+- les règles d’autorisation liées à l’acquittement ;
 - les filtres d’alertes par statut ;
 - les règles métier liées aux missions clôturées ;
 - les règles métier liées aux satellites inactifs.
@@ -766,6 +811,7 @@ Workflow :
 - gestion des missions opérationnelle ;
 - gestion des satellites opérationnelle ;
 - consultation des alertes opérationnelle ;
+- acquittement des alertes opérationnel ;
 - tests backend en place ;
 - CI GitHub Actions en place.
 
@@ -781,6 +827,7 @@ Workflow :
 | Gestion des missions | Réalisée |
 | Gestion des satellites | Réalisée |
 | Consultation des alertes | Réalisée |
+| Acquittement des alertes | Réalisée |
 | Tests backend | Réalisés |
 | CI minimale | Réalisée |
 

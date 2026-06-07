@@ -261,3 +261,33 @@
     padding: 16px;
   }
 }
+
+.success-card {
+  max-width: 1200px;
+  margin: 0 auto 16px;
+  background: rgba(34, 197, 94, 0.08);
+  border: 1px solid #22c55e;
+  color: #bbf7d0;
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.small-primary-button {
+  border: none;
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  background: #f59e0b;
+  color: #020617;
+}
+
+.small-primary-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.alert-table td:nth-child(9)::before {
+  content: "Actions";
+}

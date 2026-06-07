@@ -24,4 +24,11 @@ export class AlertService {
       { params }
     );
   }
+
+  acknowledge(alertId: number): Observable<Alert> {
+    return this.http.post<Alert>(
+      `http://localhost:8080/api/alerts/${alertId}/ack`,
+      {}
+    );
+  }
 }
