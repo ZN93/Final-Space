@@ -260,55 +260,61 @@
           </thead>
 
           <tbody>
-            <tr *ngFor="let satellite of satellites">
-              <td>{{ satellite.name }}</td>
+            <ng-container *ngFor="let satellite of satellites">
+              <tr>
+                <td>{{ satellite.name }}</td>
 
-              <td>
-                <span
-                  class="status"
-                  [class.active]="satellite.status === 'ACTIF'"
-                  [class.closed]="satellite.status === 'INACTIF'"
-                >
-                  {{ satellite.status }}
-                </span>
-              </td>
-
-              <td>{{ satellite.massKg || '-' }} kg</td>
-              <td>{{ satellite.altitudeKm || '-' }} km</td>
-              <td>{{ satellite.inclinationDeg || '-' }} °</td>
-              <td>{{ satellite.eccentricity ?? '-' }}</td>
-
-              <td>
-                <div class="satellite-actions">
-                  <button
-                    *ngIf="canEditSatellite(satellite)"
-                    type="button"
-                    class="small-secondary-button"
-                    (click)="startEditSatellite(satellite)"
+                <td>
+                  <span
+                    class="status"
+                    [class.active]="satellite.status === 'ACTIF'"
+                    [class.closed]="satellite.status === 'INACTIF'"
                   >
-                    Modifier
-                  </button>
-
-                  <button
-                    *ngIf="canEditSatellite(satellite)"
-                    type="button"
-                    class="small-danger-button"
-                    [disabled]="satelliteDisableSaving"
-                    (click)="disableSatellite(satellite)"
-                  >
-                    Désactiver
-                  </button>
-
-                  <span *ngIf="isSatelliteInactive(satellite)" class="readonly-label">
-                    Lecture seule
+                    {{ satellite.status }}
                   </span>
+                </td>
 
-                  <span *ngIf="!isSatelliteInactive(satellite) && !canManage()" class="readonly-label">
-                    Consultation
-                  </span>
-                </div>
-              </td>
-            </tr>
+                <td>{{ satellite.massKg || '-' }} kg</td>
+                <td>{{ satellite.altitudeKm || '-' }} km</td>
+                <td>{{ satellite.inclinationDeg || '-' }} °</td>
+                <td>{{ satellite.eccentricity ?? '-' }}</td>
+
+                <td>
+                  <div class="satellite-actions">
+                    <button
+                      *ngIf="canEditSatellite(satellite)"
+                      type="button"
+                      class="small-secondary-button"
+                      (click)="startEditSatellite(satellite)"
+                    >
+                      Modifier
+                    </button>
+
+                    <button
+                      *ngIf="canEditSatellite(satellite)"
+                      type="button"
+                      class="small-danger-button"
+                      [disabled]="satelliteDisableSaving"
+                      (click)="disableSatellite(satellite)"
+                    >
+                      Désactiver
+                    </button>
+
+                    <span *ngIf="isSatelliteInactive(satellite)" class="readonly-label">
+                      Lecture seule
+                    </span>
+
+                    <span *ngIf="!isSatelliteInactive(satellite) && !canManage()" class="readonly-label">
+                      Consultation
+                    </span>
+
+                    <span *ngIf="!isSatelliteInactive(satellite) && canManage() && isClosed()" class="readonly-label">
+                      Paramètres en lecture seule
+                    </span>
+                  </div>
+                </td>
+              </tr>
+            </ng-container>
           </tbody>
         </table>
       </div>

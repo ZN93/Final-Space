@@ -267,7 +267,9 @@ export class MissionDetailComponent implements OnInit {
         this.satelliteInclinationDeg = null;
         this.satelliteEccentricity = null;
 
-        this.loadSatellites(this.mission!.id);
+        if (this.mission) {
+          this.loadSatellites(this.mission.id);
+        }
       },
       error: (error) => {
         this.satelliteSaving = false;
@@ -378,6 +380,8 @@ export class MissionDetailComponent implements OnInit {
       next: () => {
         this.satelliteDisableSaving = false;
 
+        this.cancelEditSatellite();
+
         if (this.mission) {
           this.loadSatellites(this.mission.id);
         }
@@ -398,5 +402,6 @@ export class MissionDetailComponent implements OnInit {
   canEditSatellite(satellite: Satellite): boolean {
     return this.canManage() && !this.isSatelliteInactive(satellite);
   }
+
 
 }

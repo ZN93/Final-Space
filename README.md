@@ -480,6 +480,131 @@ Réponse :
 
 ---
 
+## Paramétrage orbital des satellites
+
+L’application permet de renseigner et de modifier les paramètres orbitaux d’un satellite afin de préparer les futures simulations orbitales.
+
+Les paramètres orbitaux sont stockés directement dans l’entité `Satellite`, car ils font déjà partie des informations fonctionnelles du satellite depuis l’US06.
+
+### Choix d’implémentation
+
+L’US11 prévoyait initialement la création d’un endpoint dédié de type :
+
+```http
+PUT /api/satellites/{id}/orbit-params
+```
+
+Après analyse, ce choix a été abandonné pour le MVP, car il introduisait une redondance avec l’endpoint existant de modification d’un satellite :
+
+```http
+PUT /api/satellites/{id}
+```
+
+Les paramètres orbitaux étant déjà présents dans `SatelliteUpdateRequest`, il est plus cohérent de les valider et de les modifier via l’endpoint existant plutôt que d’exposer un endpoint supplémentaire pour une opération déjà couverte.
+
+Ce choix permet :
+
+- de réduire la duplication de code ;
+- d’éviter un endpoint redondant ;
+- de conserver une API plus simple ;
+- de limiter la complexité côté frontend ;
+- de rester cohérent avec le modèle `Satellite` existant.
+
+---
+
+### Paramètres orbitaux disponibles
+
+| Champ | Description | Validation |
+|---|---|---|
+| `massKg` | Masse du satellite en kilogrammes | Obligatoire, supérieure à `0` |
+| `altitudeKm` | Altitude orbitale initiale en kilomètres | Obligatoire, supérieure à `0` |
+| `inclinationDeg` | Inclinaison orbitale en degrés | Obligatoire, entre `0` et `180` |
+| `eccentricity` | Excentricité orbitale | Obligatoire, supérieure ou égale à `0` |
+
+---
+
+### Endpoint utilisé
+
+| Méthode | Endpoint | Description | Rôles autorisés |
+|---|---|---|---|
+| `PUT` | `/api/satellites/{id}` | Modifier un satellite et ses paramètres orbitaux | ADMIN, OPERATEUR |
+
+Le rôle `LECTEUR` peut consulter les paramètres orbitaux mais ne peut pas les modifier.
+
+---
+
+### Exemple de mise à jour des paramètres orbitaux
+
+```http
+PUT /api/satellites/2
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+Payload :
+
+```json
+{
+  "name": "LunaSat-01 Updated",
+  "massKg": 900.0,
+  "altitudeKm": 420.0,
+  "inclinationDeg": 52.0,
+  "eccentricity": 0.002
+}
+```
+
+Réponse :
+
+```json
+{
+  "id": 2,
+  "name": "LunaSat-01 Updated",
+  "status": "ACTIF",
+  "massKg": 900.0,
+  "altitudeKm": 420.0,
+  "inclinationDeg": 52.0,
+  "eccentricity": 0.002,
+  "createdAt": "2026-06-06T13:51:17.733464",
+  "updatedAt": "2026-06-07T16:41:28.339819",
+  "missionId": 4,
+  "missionName": "Mission to the MOOOOON"
+}
+```
+
+---
+
+### Règles métier
+
+| Règle | Description |
+|---|---|
+| Satellite actif | Les paramètres orbitaux peuvent être modifiés uniquement si le satellite est `ACTIF` |
+| Satellite inactif | Un satellite `INACTIF` est en lecture seule |
+| Mission clôturée | Les satellites d’une mission clôturée restent consultables mais ne sont plus modifiables côté UI |
+| Valeurs numériques | Les paramètres doivent respecter les bornes définies |
+| Simulation future | Les paramètres seront utilisés comme base d’entrée pour les futures simulations orbitales |
+
+---
+
+### Comportement frontend
+
+Le frontend Angular permet de consulter les paramètres orbitaux dans la liste des satellites rattachés à une mission.
+
+La modification des paramètres orbitaux est intégrée au formulaire existant de modification du satellite afin d’éviter un formulaire redondant.
+
+| Rôle | Comportement UI |
+|---|---|
+| ADMIN | Peut modifier les paramètres orbitaux d’un satellite actif |
+| OPERATEUR | Peut modifier les paramètres orbitaux d’un satellite actif |
+| LECTEUR | Consultation uniquement |
+
+La modification est masquée ou rendue indisponible lorsque :
+
+- le satellite est `INACTIF` ;
+- la mission est `CLOTUREE` ;
+- l’utilisateur possède uniquement le rôle `LECTEUR`.
+
+---
+
 ## Dashboard mission
 
 L’application permet de consulter un dashboard synthétique pour une mission.
