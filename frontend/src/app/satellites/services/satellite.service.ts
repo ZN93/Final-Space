@@ -35,4 +35,5 @@ export class SatelliteService {
   disable(id: number): Observable<Satellite> {
     return this.http.post<Satellite>(`${this.apiUrl}/satellites/${id}/disable`, {});
   }
+
 }

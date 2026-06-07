@@ -269,7 +269,7 @@ class SatelliteServiceImplTest {
                 () -> satelliteService.update(1L, request)
         );
 
-        assertEquals("Un satellite inactif ne peut pas être modifié", exception.getMessage());
+        assertEquals("Satellite inactif non modifiable", exception.getMessage());
 
         verify(satelliteRepository, never()).save(any(Satellite.class));
     }
@@ -308,5 +308,30 @@ class SatelliteServiceImplTest {
         assertEquals(SatelliteStatus.INACTIF, response.status());
 
         verify(satelliteRepository, never()).save(any(Satellite.class));
+    }
+
+    @Test
+    void shouldUpdateSatelliteWithOrbitParams() {
+        SatelliteUpdateRequest request = new SatelliteUpdateRequest(
+                "LunaSat updated",
+                900.0,
+                420.0,
+                52.0,
+                0.002
+        );
+
+        when(satelliteRepository.findById(1L)).thenReturn(Optional.of(activeSatellite));
+        when(satelliteRepository.save(activeSatellite)).thenReturn(activeSatellite);
+
+        SatelliteResponse response = satelliteService.update(1L, request);
+
+        assertEquals("LunaSat updated", response.name());
+        assertEquals(900.0, response.massKg());
+        assertEquals(420.0, response.altitudeKm());
+        assertEquals(52.0, response.inclinationDeg());
+        assertEquals(0.002, response.eccentricity());
+
+        verify(satelliteRepository).findById(1L);
+        verify(satelliteRepository).save(activeSatellite);
     }
 }

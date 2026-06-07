@@ -73,10 +73,11 @@ public class SatelliteServiceImpl implements SatelliteService {
 
     @Override
     public SatelliteResponse update(Long id, SatelliteUpdateRequest request) {
-        Satellite satellite = findSatelliteOrThrow(id);
+        Satellite satellite = satelliteRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Satellite introuvable"));
 
         if (satellite.getStatus() == SatelliteStatus.INACTIF) {
-            throw new BusinessException("Un satellite inactif ne peut pas être modifié");
+            throw new BusinessException("Satellite inactif non modifiable");
         }
 
         satellite.setName(request.name());

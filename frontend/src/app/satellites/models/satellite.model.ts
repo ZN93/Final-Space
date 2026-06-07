@@ -29,3 +29,10 @@ export interface SatelliteUpdateRequest {
   inclinationDeg?: number | null;
   eccentricity?: number | null;
 }
+
+export interface OrbitParamsUpdateRequest {
+  massKg: number;
+  altitudeKm: number;
+  inclinationDeg: number;
+  eccentricity: number;
+}
