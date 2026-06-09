@@ -1,0 +1,313 @@
+<section class="satellite-detail-page">
+  <div class="page-actions">
+    <a
+      *ngIf="satellite"
+      [routerLink]="['/missions', satellite.missionId]"
+      class="secondary-button"
+    >
+      ← Retour mission
+    </a>
+
+    <a routerLink="/missions" class="secondary-button">
+      Missions
+    </a>
+  </div>
+
+  <div *ngIf="loading" class="state-card">
+    Chargement du satellite...
+  </div>
+
+  <div *ngIf="errorMessage" class="error-card">
+    {{ errorMessage }}
+  </div>
+
+  <div *ngIf="successMessage" class="success-card">
+    {{ successMessage }}
+  </div>
+
+  <div *ngIf="satellite && !loading" class="detail-card">
+    <div class="detail-header">
+      <div>
+        <h1>{{ satellite.name }}</h1>
+        <p>Satellite rattaché à la mission {{ satellite.missionName }}.</p>
+      </div>
+
+      <span
+        class="status"
+        [class.active]="satellite.status === 'ACTIF'"
+        [class.closed]="satellite.status === 'INACTIF'"
+      >
+        {{ satellite.status }}
+      </span>
+    </div>
+
+    <div *ngIf="isInactive()" class="info-card">
+      Ce satellite est inactif. Il reste consultable mais ne peut plus être modifié.
+    </div>
+
+    <div class="metadata-grid">
+      <div>
+        <span>Mission</span>
+        <strong>{{ satellite.missionName }}</strong>
+      </div>
+
+      <div>
+        <span>Créé le</span>
+        <strong>{{ satellite.createdAt | date:'dd/MM/yyyy HH:mm' }}</strong>
+      </div>
+
+      <div>
+        <span>Mis à jour le</span>
+        <strong>{{ satellite.updatedAt | date:'dd/MM/yyyy HH:mm' }}</strong>
+      </div>
+    </div>
+
+    <form class="satellite-form" (ngSubmit)="updateSatellite()">
+      <h2>Paramètres du satellite</h2>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="name">Nom du satellite *</label>
+          <input
+            id="name"
+            name="name"
+            type="text"
+            [(ngModel)]="editName"
+            [readonly]="!canEditSatellite()"
+            maxlength="150"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="massKg">Masse (kg)</label>
+          <input
+            id="massKg"
+            name="massKg"
+            type="number"
+            min="0.01"
+            step="0.01"
+            [(ngModel)]="editMassKg"
+            [readonly]="!canEditSatellite()"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="altitudeKm">Altitude initiale (km)</label>
+          <input
+            id="altitudeKm"
+            name="altitudeKm"
+            type="number"
+            min="0.01"
+            step="0.01"
+            [(ngModel)]="editAltitudeKm"
+            [readonly]="!canEditSatellite()"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="inclinationDeg">Inclinaison (°)</label>
+          <input
+            id="inclinationDeg"
+            name="inclinationDeg"
+            type="number"
+            min="0"
+            max="180"
+            step="0.01"
+            [(ngModel)]="editInclinationDeg"
+            [readonly]="!canEditSatellite()"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="eccentricity">Excentricité</label>
+          <input
+            id="eccentricity"
+            name="eccentricity"
+            type="number"
+            min="0"
+            step="0.0001"
+            [(ngModel)]="editEccentricity"
+            [readonly]="!canEditSatellite()"
+          />
+        </div>
+      </div>
+
+      <div class="actions">
+        <button
+          *ngIf="canEditSatellite()"
+          type="submit"
+          class="primary-button"
+          [disabled]="saving"
+        >
+          {{ saving ? 'Modification...' : 'Modifier le satellite' }}
+        </button>
+
+        <button
+          *ngIf="canEditSatellite()"
+          type="button"
+          class="danger-button"
+          [disabled]="disabling"
+          (click)="disableSatellite()"
+        >
+          {{ disabling ? 'Désactivation...' : 'Désactiver le satellite' }}
+        </button>
+      </div>
+    </form>
+
+    <section *ngIf="showSimulationSection()" class="simulation-section">
+      <div class="simulation-header">
+        <div>
+          <h2>Simulation orbitale</h2>
+          <p>
+            Lance une simulation simplifiée à deux corps à partir des paramètres orbitaux enregistrés.
+          </p>
+        </div>
+
+        <button
+          *ngIf="canLaunchOrbitSimulation()"
+          type="button"
+          class="primary-button"
+          [disabled]="simulationLaunching"
+          (click)="launchOrbitSimulation()"
+        >
+          {{ simulationLaunching ? 'Simulation...' : 'Lancer simulation d’orbite' }}
+        </button>
+      </div>
+
+      <div *ngIf="!canLaunchOrbitSimulation()" class="info-card">
+        La simulation peut être lancée uniquement par un administrateur ou un opérateur sur un satellite actif.
+      </div>
+
+      <div *ngIf="simulationErrorMessage" class="error-card">
+        {{ simulationErrorMessage }}
+      </div>
+
+      <div *ngIf="simulationResult" class="simulation-result">
+        <h3>Résultat de simulation #{{ simulationResult.id }}</h3>
+
+        <div class="result-grid">
+          <div>
+            <span>Statut</span>
+            <strong>{{ simulationResult.status }}</strong>
+          </div>
+
+          <div>
+            <span>Type</span>
+            <strong>{{ simulationResult.type }}</strong>
+          </div>
+
+          <div>
+            <span>Forme orbitale</span>
+            <strong>{{ simulationResult.orbitShape }}</strong>
+          </div>
+
+          <div>
+            <span>Période orbitale</span>
+            <strong>{{ simulationResult.orbitalPeriodMinutes }} min</strong>
+          </div>
+
+          <div>
+            <span>Vitesse moyenne</span>
+            <strong>{{ simulationResult.averageVelocityKmS }} km/s</strong>
+          </div>
+
+          <div>
+            <span>Lancée par</span>
+            <strong>{{ simulationResult.createdBy }}</strong>
+          </div>
+
+          <div>
+            <span>Date</span>
+            <strong>{{ simulationResult.createdAt | date:'dd/MM/yyyy HH:mm' }}</strong>
+          </div>
+        </div>
+
+        <h4>Paramètres figés utilisés</h4>
+
+        <div class="result-grid">
+          <div>
+            <span>Masse</span>
+            <strong>{{ simulationResult.inputMassKg }} kg</strong>
+          </div>
+
+          <div>
+            <span>Altitude</span>
+            <strong>{{ simulationResult.inputAltitudeKm }} km</strong>
+          </div>
+
+          <div>
+            <span>Inclinaison</span>
+            <strong>{{ simulationResult.inputInclinationDeg }}°</strong>
+          </div>
+
+          <div>
+            <span>Excentricité</span>
+            <strong>{{ simulationResult.inputEccentricity }}</strong>
+          </div>
+        </div>
+
+        <h4>Visualisation 2D simplifiée</h4>
+
+        <div class="orbit-visualization">
+          <svg
+            viewBox="0 0 320 320"
+            class="orbit-svg"
+            role="img"
+            aria-label="Visualisation simplifiée de l’orbite du satellite"
+          >
+            <defs>
+              <radialGradient id="earthGradient" cx="35%" cy="35%" r="70%">
+                <stop offset="0%" stop-color="#7dd3fc"></stop>
+                <stop offset="45%" stop-color="#0284c7"></stop>
+                <stop offset="100%" stop-color="#0f172a"></stop>
+              </radialGradient>
+
+              <filter id="earthGlow" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="3" result="coloredBlur"></feGaussianBlur>
+                <feMerge>
+                  <feMergeNode in="coloredBlur"></feMergeNode>
+                  <feMergeNode in="SourceGraphic"></feMergeNode>
+                </feMerge>
+              </filter>
+
+              <filter id="orbitGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="1.2" result="coloredBlur"></feGaussianBlur>
+                <feMerge>
+                  <feMergeNode in="coloredBlur"></feMergeNode>
+                  <feMergeNode in="SourceGraphic"></feMergeNode>
+                </feMerge>
+              </filter>
+            </defs>
+
+            <ellipse
+              [attr.cx]="getOrbitEllipse().cx"
+              [attr.cy]="getOrbitEllipse().cy"
+              [attr.rx]="getOrbitEllipse().rx"
+              [attr.ry]="getOrbitEllipse().ry"
+              class="orbit-path"
+            ></ellipse>
+
+            <circle
+              [attr.cx]="getOrbitEllipse().cx"
+              [attr.cy]="getOrbitEllipse().cy"
+              [attr.r]="getEarthRadius()"
+              class="earth-body"
+            ></circle>
+
+            <circle
+              [attr.cx]="getSatelliteMarker().cx"
+              [attr.cy]="getSatelliteMarker().cy"
+              r="4"
+              class="satellite-marker"
+            ></circle>
+          </svg>
+        </div>
+
+        <p class="orbit-note">
+          Visualisation schématique : l’ellipse représente la trajectoire simplifiée calculée à partir de l’excentricité.
+        </p>
+      </div>
+    </section>
+  </div>
+</section>
