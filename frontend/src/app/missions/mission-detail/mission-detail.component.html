@@ -262,7 +262,14 @@
           <tbody>
             <ng-container *ngFor="let satellite of satellites">
               <tr>
-                <td>{{ satellite.name }}</td>
+                <td>
+                  <a
+                    [routerLink]="['/satellites', satellite.id]"
+                    class="satellite-link"
+                  >
+                    {{ satellite.name }}
+                  </a>
+                </td>
 
                 <td>
                   <span

@@ -512,6 +512,161 @@ Ce choix permet :
 
 ---
 
+## Simulation orbitale
+
+L’application permet de lancer une simulation d’orbite à partir des paramètres orbitaux enregistrés sur un satellite.
+
+La simulation repose sur un moteur de calcul simplifié à deux corps.  
+Elle permet d’estimer des résultats orbitaux exploitables dans le cadre du MVP :
+
+- période orbitale ;
+- vitesse orbitale moyenne ;
+- forme de l’orbite ;
+- paramètres figés utilisés lors du lancement ;
+- représentation 2D simplifiée de la trajectoire.
+
+Chaque lancement crée un nouveau run de simulation persisté en base de données.
+
+---
+
+### Choix d’implémentation
+
+Une page détail satellite dédiée a été ajoutée afin de centraliser les actions liées à un satellite :
+
+```http
+/satellites/{id}
+```
+
+Cette page permet :
+
+- de consulter les informations du satellite ;
+- de modifier ses paramètres orbitaux ;
+- de désactiver le satellite ;
+- de lancer une simulation d’orbite ;
+- d’afficher les résultats de la dernière simulation lancée.
+
+Ce choix est plus propre que l’ajout d’un simple bouton dans le tableau des satellites d’une mission, car il prépare les futures évolutions :
+
+- historique des simulations ;
+- détail d’un run de simulation ;
+- visualisations orbitales plus avancées ;
+- séparation claire entre la mission et le satellite.
+
+---
+
+### Endpoint de lancement
+
+| Méthode | Endpoint | Description | Rôles autorisés |
+|---|---|---|---|
+| `POST` | `/api/satellites/{id}/simulations/orbit` | Lancer une simulation orbitale pour un satellite | ADMIN, OPERATEUR |
+
+Le rôle `LECTEUR` peut consulter les informations satellite mais ne peut pas lancer de simulation.
+
+---
+
+### Exemple de lancement
+
+```http
+POST /api/satellites/3/simulations/orbit
+Authorization: Bearer <token>
+```
+
+Réponse :
+
+```json
+{
+  "id": 14,
+  "missionId": 4,
+  "missionName": "Mission to the MOOOOON",
+  "satelliteId": 3,
+  "satelliteName": "LunaSat-03",
+  "type": "ORBIT",
+  "status": "SUCCESS",
+  "inputMassKg": 850.0,
+  "inputAltitudeKm": 500.0,
+  "inputInclinationDeg": 95.0,
+  "inputEccentricity": 0.4,
+  "orbitalPeriodMinutes": 94.47,
+  "averageVelocityKmS": 7.62,
+  "orbitShape": "ELLIPTIQUE",
+  "plotDataJson": "[...]",
+  "createdAt": "2026-06-09T16:41:00",
+  "createdBy": "admin@finalspace.com"
+}
+```
+
+---
+
+### Données persistées
+
+Les simulations sont enregistrées dans l’entité `SimulationRun`.
+
+| Champ | Description |
+|---|---|
+| `id` | Identifiant du run de simulation |
+| `missionId` | Mission associée |
+| `satelliteId` | Satellite simulé |
+| `type` | Type de simulation, actuellement `ORBIT` |
+| `status` | Statut du run, actuellement `SUCCESS` ou `FAILED` |
+| `inputMassKg` | Masse figée utilisée lors du lancement |
+| `inputAltitudeKm` | Altitude figée utilisée lors du lancement |
+| `inputInclinationDeg` | Inclinaison figée utilisée lors du lancement |
+| `inputEccentricity` | Excentricité figée utilisée lors du lancement |
+| `orbitalPeriodMinutes` | Période orbitale calculée |
+| `averageVelocityKmS` | Vitesse orbitale moyenne calculée |
+| `orbitShape` | Forme de l’orbite |
+| `plotDataJson` | Données de visualisation 2D simplifiée |
+| `createdAt` | Date de lancement |
+| `createdBy` | Utilisateur ayant lancé la simulation |
+
+---
+
+### Règles métier
+
+| Règle | Description |
+|---|---|
+| Satellite actif | Une simulation ne peut être lancée que sur un satellite `ACTIF` |
+| Mission active | Une simulation ne peut pas être lancée si la mission est clôturée |
+| Paramètres valides | Les paramètres orbitaux doivent être cohérents |
+| Paramètres figés | Les paramètres utilisés sont copiés dans le run au moment du lancement |
+| Nouveau run | Chaque lancement crée une nouvelle simulation |
+| Consultation | Le résultat est affiché après lancement |
+| Sécurité | Seuls ADMIN et OPERATEUR peuvent lancer une simulation |
+
+---
+
+### Résultats affichés côté frontend
+
+La page détail satellite affiche après lancement :
+
+- le statut du run ;
+- le type de simulation ;
+- la forme orbitale ;
+- la période orbitale ;
+- la vitesse moyenne ;
+- l’utilisateur ayant lancé la simulation ;
+- la date de lancement ;
+- les paramètres figés utilisés ;
+- une visualisation 2D simplifiée de l’orbite.
+
+---
+
+### Limites actuelles
+
+La simulation reste volontairement simplifiée.
+
+Le MVP ne couvre pas encore :
+
+- les perturbations orbitales avancées ;
+- les solveurs numériques complexes ;
+- les simulations multi-satellites ;
+- les constellations ;
+- l’historique complet des simulations côté UI ;
+- le détail d’un run de simulation accessible par URL.
+
+Une évolution future pourra extraire le moteur de calcul dans un service dédié ou utiliser une bibliothèque spécialisée de mécanique orbitale.
+---
+
 ### Paramètres orbitaux disponibles
 
 | Champ | Description | Validation |
@@ -1164,7 +1319,12 @@ Les tests couvrent notamment :
 - les règles d’autorisation liées à l’acquittement ;
 - les filtres d’alertes par statut ;
 - les règles métier liées aux missions clôturées ;
-- les règles métier liées aux satellites inactifs.
+- les règles métier liées aux satellites inactifs;
+- le moteur de calcul orbital simplifié ;
+- le lancement d’une simulation orbitale ;
+- la persistance des runs de simulation ;
+- les règles d’accès ADMIN / OPERATEUR / LECTEUR ;
+- le refus de simulation sur satellite inactif ou mission clôturée.
 
 ### Tests frontend
 
@@ -1226,6 +1386,7 @@ Workflow :
 | Consultation des alertes | Réalisée |
 | Acquittement des alertes | Réalisée |
 | Gestion des incidents | Réalisée |
+| Simulation orbitale | Réalisée |
 | Tests backend | Réalisés |
 | CI minimale | Réalisée |
 
@@ -1240,4 +1401,6 @@ Les prochaines fonctionnalités métier prévues sont :
 - détection d’anomalies ;
 - génération automatique d’alertes ;
 - gestion des incidents ;
+- simulation orbitale opérationnelle ;
+- page détail satellite ajoutée ;
 - génération de rapports.
