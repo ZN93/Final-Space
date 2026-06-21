@@ -26,9 +26,36 @@ services:
       timeout: 5s
       retries: 5
 
+  mongodb:
+    image: mongo:7
+    container_name: finalspace-mongodb
+
+    restart: unless-stopped
+
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: finalspace
+      MONGO_INITDB_ROOT_PASSWORD: finalspace
+      MONGO_INITDB_DATABASE: finalspace
+
+    ports:
+      - "27017:27017"
+
+    volumes:
+      - mongodb_data:/data/db
+
+    networks:
+      - finalspace-network
+
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --username finalspace --password finalspace --authenticationDatabase admin --eval 'db.adminCommand({ ping: 1 })'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 
 volumes:
   postgres_data:
+  mongodb_data:
 
 
 networks:

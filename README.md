@@ -1333,6 +1333,282 @@ Ces points sont prévus hors périmètre de l’US14 ou dans des user stories fu
 
 ---
 
+## Import de données de télémétrie CSV
+
+L’application permet d’importer des données de télémétrie au format CSV pour un satellite actif.
+
+Les données de télémétrie représentent des mesures temporelles associées à un satellite et à une mission. Elles seront utilisées ensuite pour la visualisation, l’analyse et la détection d’anomalies.
+
+Cette fonctionnalité introduit l’utilisation d’une base de données non relationnelle dans le projet.
+
+---
+
+### Stockage NoSQL avec MongoDB
+
+Les données métier principales restent stockées dans PostgreSQL :
+
+- utilisateurs ;
+- missions ;
+- satellites ;
+- simulations ;
+- alertes ;
+- incidents.
+
+Les données de télémétrie sont stockées dans MongoDB, dans une collection dédiée :
+
+```text
+telemetry_points
+```
+
+Ce choix permet de séparer les données relationnelles classiques des données temporelles potentiellement volumineuses.
+
+MongoDB est utilisé pour stocker des documents de télémétrie de manière flexible.
+
+---
+
+### Document MongoDB
+
+Chaque point de télémétrie est stocké sous forme de document MongoDB.
+
+Structure d’un document :
+
+```json
+{
+  "id": "...",
+  "missionId": 4,
+  "satelliteId": 3,
+  "timestamp": "2026-01-01T10:00:00Z",
+  "metric": "temperature",
+  "value": 42.5,
+  "sourceImportId": "uuid",
+  "createdAt": "2026-06-21T11:28:30Z"
+}
+```
+
+Un index composé est ajouté sur :
+
+```text
+satelliteId, metric, timestamp
+```
+
+Cet index prépare les usages futurs de visualisation par satellite, métrique et période temporelle.
+
+---
+
+### Format CSV attendu
+
+Le fichier CSV doit contenir un header obligatoire avec les colonnes suivantes :
+
+```csv
+timestamp,metric,value
+```
+
+Exemple de fichier valide :
+
+```csv
+timestamp,metric,value
+2026-01-01T10:00:00Z,temperature,42.5
+2026-01-01T10:00:00Z,battery,78
+```
+
+Les règles de validation sont les suivantes :
+
+| Colonne | Règle |
+|---|---|
+| `timestamp` | Date au format ISO-8601 |
+| `metric` | Nom de métrique non vide |
+| `value` | Valeur numérique |
+
+Le séparateur attendu est la virgule.
+
+---
+
+### Endpoint API
+
+| Méthode | Endpoint | Description | Rôles autorisés |
+|---|---|---|---|
+| `POST` | `/api/missions/{missionId}/satellites/{satelliteId}/telemetry/import` | Importer un fichier CSV de télémétrie | ADMIN, OPERATEUR |
+
+Le rôle `LECTEUR` ne peut pas importer de données de télémétrie.
+
+---
+
+### Exemple de requête
+
+```http
+POST /api/missions/4/satellites/3/telemetry/import
+Authorization: Bearer <token>
+Content-Type: multipart/form-data
+```
+
+Body :
+
+```text
+file = telemetry-valid.csv
+```
+
+Réponse en cas de succès :
+
+```json
+{
+  "importId": "a8c9129a-2002-491a-a61a-7ddf4fe3373c",
+  "importedCount": 2,
+  "errorCount": 0,
+  "errors": []
+}
+```
+
+---
+
+### Gestion des erreurs CSV
+
+Si le fichier CSV est invalide, l’import est refusé.
+
+Aucune donnée partielle n’est conservée.
+
+Exemple de réponse en erreur :
+
+```json
+{
+  "importId": null,
+  "importedCount": 0,
+  "errorCount": 3,
+  "errors": [
+    {
+      "line": 3,
+      "message": "Timestamp invalide. Format attendu : ISO-8601, exemple 2026-01-01T10:00:00Z"
+    },
+    {
+      "line": 4,
+      "message": "La métrique est obligatoire"
+    },
+    {
+      "line": 5,
+      "message": "La valeur doit être numérique"
+    }
+  ]
+}
+```
+
+---
+
+### Règles métier
+
+| Règle | Description |
+|---|---|
+| Satellite actif | L’import est autorisé uniquement sur un satellite `ACTIF` |
+| Mission active | L’import est refusé si la mission est clôturée |
+| Satellite rattaché à la mission | Le satellite doit appartenir à la mission indiquée |
+| Format CSV obligatoire | Le fichier doit être au format `.csv` |
+| Header obligatoire | Le header doit être exactement `timestamp,metric,value` |
+| Timestamp valide | Le timestamp doit être parsable au format ISO-8601 |
+| Métrique obligatoire | Le champ `metric` ne doit pas être vide |
+| Valeur numérique | Le champ `value` doit être numérique |
+| Aucune donnée partielle | Si une ligne est invalide, aucune ligne n’est persistée |
+| Sécurité | ADMIN et OPERATEUR peuvent importer, LECTEUR est refusé |
+
+---
+
+### Frontend
+
+L’import CSV est disponible depuis la page détail d’un satellite.
+
+La section d’import permet :
+
+- de sélectionner un fichier CSV ;
+- d’afficher le format attendu ;
+- de lancer l’import ;
+- d’afficher un message de succès ;
+- d’afficher les erreurs ligne par ligne si le CSV est invalide.
+
+La section est disponible uniquement pour les rôles ADMIN et OPERATEUR sur un satellite actif.
+
+Pour un utilisateur LECTEUR, l’import n’est pas autorisé.
+
+---
+
+### Tests réalisés
+
+Les tests backend couvrent :
+
+- l’import d’un CSV valide ;
+- la persistance des points de télémétrie dans MongoDB ;
+- le rejet d’un header invalide ;
+- le rejet d’un timestamp invalide ;
+- le rejet d’une métrique vide ;
+- le rejet d’une valeur non numérique ;
+- le support d’un header CSV avec BOM UTF-8 ;
+- le rejet d’un fichier vide ;
+- le rejet d’un fichier non CSV ;
+- le rejet d’un satellite inexistant ;
+- le rejet d’un satellite inactif ;
+- le rejet d’une mission clôturée ;
+- le rejet d’un satellite qui n’appartient pas à la mission indiquée ;
+- les accès ADMIN, OPERATEUR, LECTEUR et non authentifié.
+
+Résultat backend :
+
+```text
+Tests run: 180, Failures: 0, Errors: 0, Skipped: 0
+BUILD SUCCESS
+```
+
+Le build frontend a également été validé :
+
+```text
+Application bundle generation complete
+```
+
+---
+
+### Validation fonctionnelle
+
+La fonctionnalité a été validée manuellement dans Postman et dans le navigateur.
+
+Cas validés :
+
+- import CSV valide ;
+- stockage des documents dans MongoDB ;
+- vérification des documents dans la collection `telemetry_points` ;
+- import CSV invalide avec retour des erreurs ligne par ligne ;
+- absence de persistance partielle en cas d’erreur ;
+- affichage de l’interface d’import côté frontend ;
+- message de succès après import ;
+- affichage des erreurs CSV côté frontend ;
+- accès refusé pour le rôle LECTEUR.
+
+---
+
+### Limites actuelles
+
+L’US15 ne couvre pas encore :
+
+- la visualisation graphique des données de télémétrie ;
+- la détection automatique d’anomalies ;
+- la consultation détaillée des points de télémétrie ;
+- la pagination des données importées ;
+- la suppression de points de télémétrie ;
+- la mise à jour de points existants ;
+- l’import de formats autres que CSV ;
+- l’import en temps réel.
+
+Ces éléments sont prévus dans des user stories futures.
+
+---
+
+### Perspectives d’évolution
+
+Évolutions possibles :
+
+- ajouter des graphiques par métrique ;
+- afficher les données de télémétrie sur une période donnée ;
+- détecter les anomalies à partir de seuils configurables ;
+- ajouter un historique des imports ;
+- ajouter un détail d’import par `sourceImportId` ;
+- ajouter l’export des données importées.
+
+---
+
 ## Dashboard mission
 
 L’application permet de consulter un dashboard synthétique pour une mission.

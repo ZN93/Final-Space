@@ -490,6 +490,118 @@
         </div>
       </div>
     </section>
+    <section class="telemetry-import-section">
+      <div class="simulation-header">
+        <div>
+          <h2>Import de télémétrie CSV</h2>
+          <p>
+            Importe des mesures temporelles associées à ce satellite pour préparer la visualisation
+            et la détection d’anomalies.
+          </p>
+        </div>
+      </div>
+
+      <div *ngIf="!canImportTelemetry()" class="info-card">
+        L’import de télémétrie est disponible uniquement pour un administrateur ou un opérateur,
+        sur un satellite actif.
+      </div>
+
+      <form
+        *ngIf="canImportTelemetry()"
+        class="telemetry-import-form"
+        (ngSubmit)="importTelemetryCsv()"
+      >
+        <div class="telemetry-format-card">
+          <h3>Format CSV attendu</h3>
+
+          <pre>timestamp,metric,value
+2026-01-01T10:00:00Z,temperature,42.5
+2026-01-01T10:00:00Z,battery,78</pre>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="telemetryCsvFile">Fichier CSV</label>
+            <input
+              id="telemetryCsvFile"
+              name="telemetryCsvFile"
+              type="file"
+              accept=".csv,text/csv"
+              (change)="onTelemetryFileSelected($event)"
+            />
+          </div>
+
+          <div class="form-group readonly-field">
+            <label>Satellite cible</label>
+            <strong>{{ satellite.name }}</strong>
+          </div>
+        </div>
+
+        <div *ngIf="selectedTelemetryFile" class="selected-file-card">
+          Fichier sélectionné :
+          <strong>{{ selectedTelemetryFile.name }}</strong>
+        </div>
+
+        <div class="actions">
+          <button
+            type="submit"
+            class="primary-button"
+            [disabled]="telemetryImporting"
+          >
+            {{ telemetryImporting ? 'Import en cours...' : 'Importer le CSV' }}
+          </button>
+        </div>
+      </form>
+
+      <div *ngIf="telemetryImportSuccessMessage" class="success-card">
+        {{ telemetryImportSuccessMessage }}
+      </div>
+
+      <div *ngIf="telemetryImportErrorMessage" class="error-card">
+        {{ telemetryImportErrorMessage }}
+      </div>
+
+      <div *ngIf="telemetryImportErrors.length > 0" class="telemetry-error-list">
+        <h3>Erreurs détectées</h3>
+
+        <table class="telemetry-error-table">
+          <thead>
+          <tr>
+            <th>Ligne</th>
+            <th>Message</th>
+          </tr>
+          </thead>
+
+          <tbody>
+          <tr *ngFor="let error of telemetryImportErrors">
+            <td>{{ error.line }}</td>
+            <td>{{ error.message }}</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div *ngIf="telemetryImportResult" class="telemetry-result-card">
+        <h3>Import terminé</h3>
+
+        <div class="result-grid">
+          <div>
+            <span>Import ID</span>
+            <strong>{{ telemetryImportResult.importId }}</strong>
+          </div>
+
+          <div>
+            <span>Points importés</span>
+            <strong>{{ telemetryImportResult.importedCount }}</strong>
+          </div>
+
+          <div>
+            <span>Erreurs</span>
+            <strong>{{ telemetryImportResult.errorCount }}</strong>
+          </div>
+        </div>
+      </div>
+    </section>
     <section class="simulation-history-section">
       <div class="simulation-header">
         <div>
