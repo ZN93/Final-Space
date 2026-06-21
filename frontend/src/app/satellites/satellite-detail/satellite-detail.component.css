@@ -326,3 +326,54 @@ input:focus {
 }
 
 
+.hohmann-form {
+  margin-top: 20px;
+}
+
+.readonly-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.readonly-field strong {
+  color: #f8fafc;
+  font-size: 15px;
+}
+
+.hohmann-visualization {
+  width: min(520px, 100%);
+  aspect-ratio: 1;
+  margin: 16px auto 0;
+  border: 1px solid #334155;
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at center, rgba(15, 23, 42, 0.2), transparent 45%),
+    rgba(2, 6, 23, 0.8);
+  overflow: hidden;
+}
+
+.hohmann-initial-orbit,
+.hohmann-target-orbit,
+.hohmann-transfer-arc {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: url(#hohmannGlow);
+}
+
+.hohmann-initial-orbit {
+  stroke: #38bdf8;
+  stroke-dasharray: 5 5;
+}
+
+.hohmann-target-orbit {
+  stroke: #22c55e;
+  stroke-dasharray: 5 5;
+}
+
+.hohmann-transfer-arc {
+  stroke: #f59e0b;
+  stroke-width: 3;
+}

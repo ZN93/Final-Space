@@ -13,13 +13,22 @@ public record SimulationResponse(
         String satelliteName,
         SimulationType type,
         SimulationStatus status,
+
         Double inputMassKg,
         Double inputAltitudeKm,
         Double inputInclinationDeg,
         Double inputEccentricity,
+
         Double orbitalPeriodMinutes,
         Double averageVelocityKmS,
         String orbitShape,
+
+        Double targetAltitudeKm,
+        Double deltaV1MS,
+        Double deltaV2MS,
+        Double deltaVTotalMS,
+        Double transferTimeMinutes,
+
         String plotDataJson,
         LocalDateTime createdAt,
         String createdBy

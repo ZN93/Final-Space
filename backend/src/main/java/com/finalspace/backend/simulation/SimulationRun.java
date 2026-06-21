@@ -48,14 +48,29 @@ public class SimulationRun {
     @Column(nullable = false)
     private Double inputEccentricity;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private Double orbitalPeriodMinutes;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private Double averageVelocityKmS;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String orbitShape;
+
+    @Column(nullable = true)
+    private Double targetAltitudeKm;
+
+    @Column(nullable = true)
+    private Double deltaV1MS;
+
+    @Column(nullable = true)
+    private Double deltaV2MS;
+
+    @Column(nullable = true)
+    private Double deltaVTotalMS;
+
+    @Column(nullable = true)
+    private Double transferTimeMinutes;
 
     @Lob
     @Column(nullable = false)

@@ -1,4 +1,4 @@
-export type SimulationType = 'ORBIT';
+export type SimulationType = 'ORBIT' | 'HOHMANN';
 
 export type SimulationStatus = 'SUCCESS' | 'FAILED';
 
@@ -16,9 +16,16 @@ export interface SimulationResponse {
   inputInclinationDeg: number;
   inputEccentricity: number;
 
-  orbitalPeriodMinutes: number;
-  averageVelocityKmS: number;
-  orbitShape: string;
+  orbitalPeriodMinutes: number | null;
+  averageVelocityKmS: number | null;
+  orbitShape: string | null;
+
+  targetAltitudeKm: number | null;
+  deltaV1MS: number | null;
+  deltaV2MS: number | null;
+  deltaVTotalMS: number | null;
+  transferTimeMinutes: number | null;
+
   plotDataJson: string;
 
   createdAt: string;
@@ -28,4 +35,10 @@ export interface SimulationResponse {
 export interface OrbitPlotPoint {
   x: number;
   y: number;
+}
+
+export interface HohmannPlotData {
+  initialOrbit: OrbitPlotPoint[];
+  targetOrbit: OrbitPlotPoint[];
+  transferArc: OrbitPlotPoint[];
 }
