@@ -488,10 +488,90 @@
             <circle cx="270" cy="160" r="4" class="satellite-marker"></circle>
           </svg>
         </div>
+      </div>
+    </section>
+    <section class="simulation-history-section">
+      <div class="simulation-header">
+        <div>
+          <h2>Historique des simulations</h2>
+          <p>
+            Consulte les simulations orbitales et les manœuvres de Hohmann déjà lancées pour ce satellite.
+          </p>
+        </div>
+      </div>
 
-        <p class="orbit-note">
-          Visualisation schématique : l’orbite initiale, l’orbite cible et l’arc de transfert sont représentés de manière simplifiée.
-        </p>
+      <div *ngIf="simulationHistoryLoading" class="info-card">
+        Chargement de l’historique des simulations...
+      </div>
+
+      <div *ngIf="simulationHistoryErrorMessage" class="error-card">
+        {{ simulationHistoryErrorMessage }}
+      </div>
+
+      <div
+        *ngIf="!simulationHistoryLoading && !simulationHistoryErrorMessage && simulationHistory.length === 0"
+        class="info-card"
+      >
+        Aucune simulation n’a encore été lancée pour ce satellite.
+      </div>
+
+      <div
+        *ngIf="!simulationHistoryLoading && simulationHistory.length > 0"
+        class="history-table-wrapper"
+      >
+        <table class="history-table">
+          <thead>
+          <tr>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Statut</th>
+            <th>Auteur</th>
+            <th>Résumé</th>
+            <th>Action</th>
+          </tr>
+          </thead>
+
+          <tbody>
+          <tr *ngFor="let simulation of simulationHistory">
+            <td>
+              {{ simulation.createdAt | date:'dd/MM/yyyy HH:mm' }}
+            </td>
+
+            <td>
+            <span class="simulation-type-badge">
+              {{ getSimulationTypeLabel(simulation.type) }}
+            </span>
+            </td>
+
+            <td>
+            <span
+              class="simulation-status-badge"
+              [class.success]="simulation.status === 'SUCCESS'"
+              [class.failed]="simulation.status === 'FAILED'"
+            >
+              {{ simulation.status }}
+            </span>
+            </td>
+
+            <td>
+              {{ simulation.createdBy }}
+            </td>
+
+            <td>
+              {{ getSimulationSummary(simulation) }}
+            </td>
+
+            <td>
+              <a
+                class="secondary-link"
+                [routerLink]="['/simulations', simulation.id]"
+              >
+                Voir détail
+              </a>
+            </td>
+          </tr>
+          </tbody>
+        </table>
       </div>
     </section>
   </div>

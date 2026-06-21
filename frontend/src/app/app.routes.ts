@@ -8,6 +8,7 @@ import { MissionDashboardPageComponent } from './mission-dashboard/mission-dashb
 import { MissionAlertListComponent } from './alerts/mission-alert-list/mission-alert-list.component';
 import { MissionIncidentListComponent } from './incidents/mission-incident-list/mission-incident-list.component';
 import { SatelliteDetailComponent } from './satellites/satellite-detail/satellite-detail.component';
+import { SimulationDetailComponent } from './simulations/simulation-detail/simulation-detail.component';
 
 export const routes: Routes = [
   {
@@ -54,6 +55,11 @@ export const routes: Routes = [
     path: 'satellites/:id',
     canActivate: [authGuard],
     component: SatelliteDetailComponent
+  },
+  {
+    path: 'simulations/:id',
+    canActivate: [authGuard],
+    component: SimulationDetailComponent
   },
   {
     path: 'forbidden',

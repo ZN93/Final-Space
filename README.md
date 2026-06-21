@@ -955,6 +955,384 @@ La modification est masquée ou rendue indisponible lorsque :
 
 ---
 
+## Historique des simulations
+
+L’application permet de consulter l’historique des simulations associées à un satellite.
+
+Chaque simulation correspond à un lancement de calcul effectué depuis l’application :
+
+- simulation orbitale simple ;
+- manœuvre de transfert de Hohmann.
+
+L’historique permet de retrouver les simulations déjà lancées, d’identifier leur type, de consulter leurs résultats principaux et d’accéder au détail complet d’une simulation.
+
+---
+
+### Objectif fonctionnel
+
+L’objectif de cette fonctionnalité est de permettre à un utilisateur authentifié de consulter les simulations déjà réalisées sur un satellite.
+
+Une simulation conserve :
+
+- le satellite concerné ;
+- la mission associée ;
+- le type de simulation ;
+- le statut du run ;
+- la date de lancement ;
+- l’utilisateur ayant lancé la simulation ;
+- les paramètres utilisés au moment du lancement ;
+- les résultats calculés ;
+- les données de visualisation.
+
+Les simulations sont conservées sans limitation de durée et ne sont pas modifiables depuis l’application.
+
+---
+
+### Types de simulations historisées
+
+| Type | Description |
+|---|---|
+| `ORBIT` | Simulation orbitale simple à partir des paramètres orbitaux du satellite |
+| `HOHMANN` | Manœuvre de transfert de Hohmann vers une altitude cible |
+
+---
+
+### Endpoints API
+
+| Méthode | Endpoint | Description | Rôles autorisés |
+|---|---|---|---|
+| `GET` | `/api/satellites/{id}/simulations` | Consulter l’historique des simulations d’un satellite | ADMIN, OPERATEUR, LECTEUR |
+| `GET` | `/api/simulations/{id}` | Consulter le détail complet d’une simulation | ADMIN, OPERATEUR, LECTEUR |
+
+Les utilisateurs doivent être authentifiés pour consulter l’historique ou le détail d’une simulation.
+
+---
+
+### Exemple de requête - Historique d’un satellite
+
+```http
+GET /api/satellites/3/simulations
+Authorization: Bearer <token>
+```
+
+Exemple de réponse :
+
+```json
+[
+  {
+    "id": 21,
+    "missionId": 4,
+    "missionName": "Mission to the MOOOOON",
+    "satelliteId": 3,
+    "satelliteName": "LunaSat-03",
+    "type": "HOHMANN",
+    "status": "SUCCESS",
+    "createdAt": "2026-06-09T23:26:44.438922",
+    "createdBy": "admin@finalspace.com",
+    "inputAltitudeKm": 500.0,
+    "targetAltitudeKm": 800.0,
+    "orbitalPeriodMinutes": null,
+    "averageVelocityKmS": null,
+    "orbitShape": null,
+    "deltaVTotalMS": 161.0,
+    "transferTimeMinutes": 48.79
+  }
+]
+```
+
+Les simulations sont retournées par ordre chronologique décroissant, de la plus récente à la plus ancienne.
+
+---
+
+### Exemple de requête - Détail d’une simulation
+
+```http
+GET /api/simulations/21
+Authorization: Bearer <token>
+```
+
+Exemple de réponse :
+
+```json
+{
+  "id": 21,
+  "missionId": 4,
+  "missionName": "Mission to the MOOOOON",
+  "satelliteId": 3,
+  "satelliteName": "LunaSat-03",
+  "type": "HOHMANN",
+  "status": "SUCCESS",
+  "inputMassKg": 850.0,
+  "inputAltitudeKm": 500.0,
+  "inputInclinationDeg": 95.0,
+  "inputEccentricity": 0.4,
+  "orbitalPeriodMinutes": null,
+  "averageVelocityKmS": null,
+  "orbitShape": null,
+  "targetAltitudeKm": 800.0,
+  "deltaV1MS": 80.93,
+  "deltaV2MS": 80.07,
+  "deltaVTotalMS": 161.0,
+  "transferTimeMinutes": 48.79,
+  "plotDataJson": "{...}",
+  "createdAt": "2026-06-09T23:26:44.438922",
+  "createdBy": "admin@finalspace.com"
+}
+```
+
+---
+
+### Données affichées dans l’historique
+
+La page détail d’un satellite affiche une section `Historique des simulations`.
+
+Cette section présente les informations suivantes :
+
+| Colonne | Description |
+|---|---|
+| Date | Date de lancement de la simulation |
+| Type | Type de simulation : orbite ou Hohmann |
+| Statut | Statut du run |
+| Auteur | Utilisateur ayant lancé la simulation |
+| Résumé | Résultat synthétique selon le type de simulation |
+| Action | Accès au détail de la simulation |
+
+Pour une simulation `ORBIT`, le résumé affiche notamment :
+
+- la période orbitale ;
+- la vitesse moyenne ;
+- la forme de l’orbite.
+
+Pour une simulation `HOHMANN`, le résumé affiche notamment :
+
+- le Δv total ;
+- la durée estimée du transfert.
+
+---
+
+### Page détail d’une simulation
+
+L’application propose une page dédiée au détail d’une simulation :
+
+```text
+/simulations/{id}
+```
+
+Cette page affiche :
+
+- le type de simulation ;
+- le statut ;
+- la mission associée ;
+- le satellite concerné ;
+- la date de lancement ;
+- l’auteur ;
+- les paramètres figés utilisés au lancement ;
+- les résultats calculés ;
+- une visualisation 2D simplifiée ;
+- les données techniques de visualisation.
+
+Pour une simulation orbitale, la page affiche les résultats orbitaux.
+
+Pour une manœuvre de Hohmann, la page affiche les résultats de transfert :
+
+- Δv départ ;
+- Δv arrivée ;
+- Δv total ;
+- durée estimée du transfert ;
+- orbite initiale ;
+- orbite cible ;
+- arc de transfert.
+
+---
+
+### Règles métier
+
+| Règle | Description |
+|---|---|
+| Conservation | Les simulations sont conservées sans limitation de durée |
+| Immutabilité | Les simulations ne peuvent pas être modifiées |
+| Suppression interdite | Les simulations ne peuvent pas être supprimées depuis l’application |
+| Consultation après clôture | Les simulations restent consultables même si la mission est clôturée |
+| Consultation après désactivation | Les simulations restent consultables même si le satellite est inactif |
+| Tri | Les simulations sont listées de la plus récente à la plus ancienne |
+| Détail | Chaque simulation peut être consultée individuellement |
+| Sécurité | ADMIN, OPERATEUR et LECTEUR peuvent consulter l’historique |
+| Authentification | Un utilisateur non authentifié ne peut pas consulter l’historique |
+
+---
+
+### Choix d’implémentation
+
+L’historique s’appuie sur l’entité `SimulationRun`.
+
+Cette entité centralise les simulations de différents types grâce au champ `type`.
+
+Les simulations orbitales et les manœuvres de Hohmann partagent donc une structure commune :
+
+- identifiant du run ;
+- mission associée ;
+- satellite associé ;
+- type ;
+- statut ;
+- auteur ;
+- date de création ;
+- paramètres figés ;
+- résultats ;
+- données de visualisation.
+
+Deux DTO sont utilisés pour distinguer les besoins d’affichage :
+
+| DTO | Utilisation |
+|---|---|
+| `SimulationListItemResponse` | Affichage de la liste des simulations |
+| `SimulationDetailResponse` | Affichage du détail complet d’une simulation |
+
+Ce découpage évite de retourner toutes les données techniques dans la liste, notamment le champ `plotDataJson`, qui peut être volumineux.
+
+---
+
+### Repository
+
+Les requêtes principales utilisées sont :
+
+```java
+List<SimulationRun> findBySatelliteIdOrderByCreatedAtDesc(Long satelliteId);
+
+List<SimulationRun> findByMissionIdOrderByCreatedAtDesc(Long missionId);
+```
+
+La requête utilisée pour l’affichage actuel est l’historique par satellite.
+
+L’historique par mission est prévu dans le modèle mais n’est pas encore exposé côté interface utilisateur.
+
+---
+
+### Gestion des erreurs
+
+| Cas | Réponse |
+|---|---|
+| Satellite introuvable | `404 Not Found` |
+| Simulation introuvable | `404 Not Found` |
+| Utilisateur non authentifié | `401 Unauthorized` |
+| Utilisateur sans droit | `403 Forbidden` |
+
+---
+
+### Frontend
+
+Côté frontend, l’historique est intégré à la page détail d’un satellite.
+
+La page satellite charge automatiquement l’historique via :
+
+```text
+GET /api/satellites/{id}/simulations
+```
+
+Après le lancement d’une simulation orbitale ou d’une manœuvre de Hohmann, l’historique est rechargé automatiquement afin d’afficher le nouveau run.
+
+Une page de détail est également disponible via :
+
+```text
+/simulations/{id}
+```
+
+Cette page appelle :
+
+```text
+GET /api/simulations/{id}
+```
+
+---
+
+### États d’affichage
+
+L’interface gère les états suivants :
+
+| État | Description |
+|---|---|
+| Chargement | Affichage d’un message pendant le chargement |
+| Vide | Message si aucune simulation n’existe pour le satellite |
+| Erreur | Message si l’historique ou le détail ne peut pas être chargé |
+| Succès | Affichage de la liste ou du détail |
+| Accès refusé | Redirection vers la page `forbidden` en cas de 403 |
+
+---
+
+### Tests réalisés
+
+Les tests backend couvrent :
+
+- la récupération de l’historique d’un satellite ;
+- le tri des simulations par date décroissante ;
+- le cas d’un historique vide ;
+- le cas d’un satellite introuvable ;
+- la récupération du détail d’une simulation ;
+- le cas d’une simulation introuvable ;
+- l’accès ADMIN ;
+- l’accès OPERATEUR ;
+- l’accès LECTEUR ;
+- le refus d’un utilisateur non authentifié.
+
+Résultat d’exécution backend :
+
+```text
+Tests run: 168, Failures: 0, Errors: 0, Skipped: 0
+BUILD SUCCESS
+```
+
+Le build frontend a également été validé :
+
+```text
+Application bundle generation complete
+```
+
+---
+
+### Validation fonctionnelle
+
+La fonctionnalité a été validée manuellement dans le navigateur.
+
+Cas validés :
+
+- l’historique apparaît sur la page détail satellite ;
+- les simulations sont affichées dans un tableau ;
+- les simulations orbitales et Hohmann sont distinguées ;
+- le résumé affiché dépend du type de simulation ;
+- le lien `Voir détail` ouvre la page de détail ;
+- la page détail affiche les paramètres et les résultats ;
+- l’accès à l’historique fonctionne avec le rôle `LECTEUR`.
+
+---
+
+### Limites actuelles
+
+La fonctionnalité ne couvre pas encore :
+
+- l’historique global d’une mission côté interface ;
+- la comparaison avancée entre plusieurs simulations ;
+- la pagination ;
+- le filtrage par type ;
+- l’export des résultats ;
+- le rejeu d’une simulation existante ;
+- la duplication d’une simulation.
+
+Ces points sont prévus hors périmètre de l’US14 ou dans des user stories futures.
+
+---
+
+### Perspectives d’évolution
+
+Évolutions possibles :
+
+- ajouter un historique par mission ;
+- ajouter une pagination côté backend et frontend ;
+- ajouter des filtres par type de simulation ;
+- ajouter une comparaison visuelle entre plusieurs simulations ;
+- ajouter l’export CSV/PDF ;
+- ajouter une page dédiée à l’ensemble des simulations d’une mission.
+
+---
+
 ## Dashboard mission
 
 L’application permet de consulter un dashboard synthétique pour une mission.

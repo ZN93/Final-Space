@@ -42,3 +42,25 @@ export interface HohmannPlotData {
   targetOrbit: OrbitPlotPoint[];
   transferArc: OrbitPlotPoint[];
 }
+
+export interface SimulationListItemResponse {
+  id: number;
+  missionId: number;
+  missionName: string;
+  satelliteId: number;
+  satelliteName: string;
+  type: SimulationType;
+  status: SimulationStatus;
+  createdAt: string;
+  createdBy: string;
+
+  inputAltitudeKm: number | null;
+  targetAltitudeKm: number | null;
+
+  orbitalPeriodMinutes: number | null;
+  averageVelocityKmS: number | null;
+  orbitShape: string | null;
+
+  deltaVTotalMS: number | null;
+  transferTimeMinutes: number | null;
+}

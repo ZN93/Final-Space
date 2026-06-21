@@ -2,12 +2,16 @@ package com.finalspace.backend.simulation.controller;
 
 import com.finalspace.backend.simulation.dto.SimulationResponse;
 import com.finalspace.backend.simulation.dto.HohmannTransferRequest;
+import com.finalspace.backend.simulation.dto.SimulationDetailResponse;
+import com.finalspace.backend.simulation.dto.SimulationListItemResponse;
 import com.finalspace.backend.simulation.service.SimulationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -33,5 +37,19 @@ public class SimulationController {
             Authentication authentication
     ) {
         return simulationService.launchHohmannTransfer(id, request, authentication.getName());
+    }
+
+    @GetMapping("/satellites/{id}/simulations")
+    public List<SimulationListItemResponse> findSimulationsBySatellite(
+            @PathVariable Long id
+    ) {
+        return simulationService.findSimulationsBySatellite(id);
+    }
+
+    @GetMapping("/simulations/{id}")
+    public SimulationDetailResponse findSimulationById(
+            @PathVariable Long id
+    ) {
+        return simulationService.findSimulationById(id);
     }
 }
