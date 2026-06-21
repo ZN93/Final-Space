@@ -10,6 +10,8 @@ import com.finalspace.backend.simulation.SimulationRun;
 import com.finalspace.backend.simulation.SimulationRunRepository;
 import com.finalspace.backend.simulation.SimulationStatus;
 import com.finalspace.backend.simulation.SimulationType;
+import com.finalspace.backend.simulation.dto.SimulationDetailResponse;
+import com.finalspace.backend.simulation.dto.SimulationListItemResponse;
 import com.finalspace.backend.simulation.dto.OrbitSimulationResult;
 import com.finalspace.backend.simulation.dto.SimulationResponse;
 import com.finalspace.backend.simulation.dto.HohmannTransferRequest;
@@ -20,6 +22,8 @@ import com.finalspace.backend.simulation.service.SimulationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 import java.time.LocalDateTime;
 
@@ -138,6 +142,76 @@ public class SimulationServiceImpl implements SimulationService {
 
     private SimulationResponse toResponse(SimulationRun run) {
         return new SimulationResponse(
+                run.getId(),
+                run.getMission().getId(),
+                run.getMission().getName(),
+                run.getSatellite().getId(),
+                run.getSatellite().getName(),
+                run.getType(),
+                run.getStatus(),
+                run.getInputMassKg(),
+                run.getInputAltitudeKm(),
+                run.getInputInclinationDeg(),
+                run.getInputEccentricity(),
+                run.getOrbitalPeriodMinutes(),
+                run.getAverageVelocityKmS(),
+                run.getOrbitShape(),
+                run.getTargetAltitudeKm(),
+                run.getDeltaV1MS(),
+                run.getDeltaV2MS(),
+                run.getDeltaVTotalMS(),
+                run.getTransferTimeMinutes(),
+                run.getPlotDataJson(),
+                run.getCreatedAt(),
+                run.getCreatedBy()
+        );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<SimulationListItemResponse> findSimulationsBySatellite(Long satelliteId) {
+        if (!satelliteRepository.existsById(satelliteId)) {
+            throw new ResourceNotFoundException("Satellite introuvable");
+        }
+
+        return simulationRunRepository.findBySatelliteIdOrderByCreatedAtDesc(satelliteId)
+                .stream()
+                .map(this::toListItemResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public SimulationDetailResponse findSimulationById(Long simulationId) {
+        SimulationRun run = simulationRunRepository.findById(simulationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Simulation introuvable"));
+
+        return toDetailResponse(run);
+    }
+
+    private SimulationListItemResponse toListItemResponse(SimulationRun run) {
+        return new SimulationListItemResponse(
+                run.getId(),
+                run.getMission().getId(),
+                run.getMission().getName(),
+                run.getSatellite().getId(),
+                run.getSatellite().getName(),
+                run.getType(),
+                run.getStatus(),
+                run.getCreatedAt(),
+                run.getCreatedBy(),
+                run.getInputAltitudeKm(),
+                run.getTargetAltitudeKm(),
+                run.getOrbitalPeriodMinutes(),
+                run.getAverageVelocityKmS(),
+                run.getOrbitShape(),
+                run.getDeltaVTotalMS(),
+                run.getTransferTimeMinutes()
+        );
+    }
+
+    private SimulationDetailResponse toDetailResponse(SimulationRun run) {
+        return new SimulationDetailResponse(
                 run.getId(),
                 run.getMission().getId(),
                 run.getMission().getName(),

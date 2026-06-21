@@ -5,8 +5,13 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../auth/auth.service';
 import { Satellite, SatelliteUpdateRequest } from '../models/satellite.model';
 import { SatelliteService } from '../services/satellite.service';
-import { HohmannPlotData, SimulationResponse, OrbitPlotPoint } from '../../simulations/models/simulation.model';
 import { SimulationService } from '../../simulations/services/simulation.service';
+import {
+  HohmannPlotData,
+  SimulationListItemResponse,
+  SimulationResponse,
+  OrbitPlotPoint
+} from '../../simulations/models/simulation.model';
 
 @Component({
   selector: 'app-satellite-detail',
@@ -42,6 +47,9 @@ export class SatelliteDetailComponent implements OnInit {
   hohmannResult: SimulationResponse | null = null;
   hohmannErrorMessage = '';
   hohmannPlotData: HohmannPlotData | null = null;
+  simulationHistory: SimulationListItemResponse[] = [];
+  simulationHistoryLoading = false;
+  simulationHistoryErrorMessage = '';
 
   constructor(
     private route: ActivatedRoute,
@@ -76,6 +84,7 @@ export class SatelliteDetailComponent implements OnInit {
         this.editInclinationDeg = satellite.inclinationDeg ?? null;
         this.editEccentricity = satellite.eccentricity ?? null;
         this.loading = false;
+        this.loadSimulationHistory(satellite.id);
       },
       error: (error) => {
         this.loading = false;
@@ -91,6 +100,33 @@ export class SatelliteDetailComponent implements OnInit {
         }
 
         this.errorMessage = 'Impossible de charger le satellite.';
+      }
+    });
+  }
+
+  loadSimulationHistory(satelliteId: number): void {
+    this.simulationHistoryLoading = true;
+    this.simulationHistoryErrorMessage = '';
+
+    this.simulationService.findBySatellite(satelliteId).subscribe({
+      next: (history) => {
+        this.simulationHistory = history;
+        this.simulationHistoryLoading = false;
+      },
+      error: (error) => {
+        this.simulationHistoryLoading = false;
+
+        if (error.status === 403) {
+          this.router.navigate(['/forbidden']);
+          return;
+        }
+
+        if (error.status === 404) {
+          this.simulationHistoryErrorMessage = 'Historique introuvable pour ce satellite.';
+          return;
+        }
+
+        this.simulationHistoryErrorMessage = 'Impossible de charger l’historique des simulations.';
       }
     });
   }
@@ -249,6 +285,7 @@ export class SatelliteDetailComponent implements OnInit {
         this.simulationResult = simulation;
         this.orbitPlotPoints = this.parsePlotData(simulation.plotDataJson);
         this.successMessage = 'Simulation orbitale lancée avec succès.';
+        this.loadSimulationHistory(simulation.satelliteId);
       },
       error: (error) => {
         this.simulationLaunching = false;
@@ -377,6 +414,7 @@ export class SatelliteDetailComponent implements OnInit {
           this.hohmannResult = result;
           this.hohmannPlotData = this.parseHohmannPlotData(result.plotDataJson);
           this.hohmannLaunching = false;
+          this.loadSimulationHistory(result.satelliteId);
         },
         error: () => {
           this.hohmannErrorMessage = 'Impossible de lancer la manœuvre de Hohmann.';
@@ -428,5 +466,30 @@ export class SatelliteDetailComponent implements OnInit {
 
   showHohmannSection(): boolean {
     return this.canLaunchOrbitSimulation() || this.hohmannResult !== null;
+  }
+
+  getSimulationSummary(simulation: SimulationListItemResponse): string {
+    if (simulation.type === 'HOHMANN') {
+      const deltaV = simulation.deltaVTotalMS ?? '-';
+      const duration = simulation.transferTimeMinutes ?? '-';
+      return `Δv total : ${deltaV} m/s · Durée : ${duration} min`;
+    }
+
+    const period = simulation.orbitalPeriodMinutes ?? '-';
+    const velocity = simulation.averageVelocityKmS ?? '-';
+    const shape = simulation.orbitShape ?? '-';
+    return `Période : ${period} min · Vitesse : ${velocity} km/s · Forme : ${shape}`;
+  }
+
+  getSimulationTypeLabel(type: string): string {
+    if (type === 'HOHMANN') {
+      return 'Hohmann';
+    }
+
+    if (type === 'ORBIT') {
+      return 'Orbite';
+    }
+
+    return type;
   }
 }

@@ -337,4 +337,136 @@ class SimulationAuthorizationIntegrationTest {
                         .content(hohmannRequestJson(-100.0)))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    void shouldAllowAdminToListSatelliteSimulationHistory() throws Exception {
+        String adminToken = loginAndGetToken("admin@finalspace.com", "admin123");
+        Satellite satellite = createActiveSatellite();
+
+        mockMvc.perform(post("/api/satellites/" + satellite.getId() + "/simulations/orbit")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/api/satellites/" + satellite.getId() + "/simulations/hohmann")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(hohmannRequestJson(800.0)))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .get("/api/satellites/" + satellite.getId() + "/simulations")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$").isArray())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.length()").value(2))
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].id").exists())
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].type").exists())
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].createdAt").exists())
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].createdBy").exists());
+    }
+
+    @Test
+    void shouldAllowReaderToListSatelliteSimulationHistory() throws Exception {
+        String adminToken = loginAndGetToken("admin@finalspace.com", "admin123");
+        String readerToken = loginAndGetToken("reader@finalspace.com", "reader123");
+        Satellite satellite = createActiveSatellite();
+
+        mockMvc.perform(post("/api/satellites/" + satellite.getId() + "/simulations/orbit")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .get("/api/satellites/" + satellite.getId() + "/simulations")
+                        .header("Authorization", "Bearer " + readerToken))
+                .andExpect(status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$").isArray())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.length()").value(1));
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenListingHistoryForUnknownSatellite() throws Exception {
+        String adminToken = loginAndGetToken("admin@finalspace.com", "admin123");
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .get("/api/satellites/99999/simulations")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void shouldRejectSimulationHistoryListWithoutToken() throws Exception {
+        Satellite satellite = createActiveSatellite();
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .get("/api/satellites/" + satellite.getId() + "/simulations"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void shouldAllowAdminToGetSimulationDetail() throws Exception {
+        String adminToken = loginAndGetToken("admin@finalspace.com", "admin123");
+        Satellite satellite = createActiveSatellite();
+
+        MvcResult creationResult = mockMvc.perform(post("/api/satellites/" + satellite.getId() + "/simulations/hohmann")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(hohmannRequestJson(800.0)))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        JsonNode creationResponse = jsonMapper.readTree(creationResult.getResponse().getContentAsString());
+        long simulationId = creationResponse.get("id").asLong();
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .get("/api/simulations/" + simulationId)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.id").value(simulationId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.type").value("HOHMANN"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.status").value("SUCCESS"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.satelliteId").value(satellite.getId()))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.targetAltitudeKm").value(800.0))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.deltaVTotalMS").isNumber())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.plotDataJson").exists());
+    }
+
+    @Test
+    void shouldAllowReaderToGetSimulationDetail() throws Exception {
+        String adminToken = loginAndGetToken("admin@finalspace.com", "admin123");
+        String readerToken = loginAndGetToken("reader@finalspace.com", "reader123");
+        Satellite satellite = createActiveSatellite();
+
+        MvcResult creationResult = mockMvc.perform(post("/api/satellites/" + satellite.getId() + "/simulations/orbit")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        JsonNode creationResponse = jsonMapper.readTree(creationResult.getResponse().getContentAsString());
+        long simulationId = creationResponse.get("id").asLong();
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .get("/api/simulations/" + simulationId)
+                        .header("Authorization", "Bearer " + readerToken))
+                .andExpect(status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.id").value(simulationId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.type").value("ORBIT"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.plotDataJson").exists());
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenSimulationDetailDoesNotExist() throws Exception {
+        String adminToken = loginAndGetToken("admin@finalspace.com", "admin123");
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .get("/api/simulations/99999")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void shouldRejectSimulationDetailWithoutToken() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .get("/api/simulations/1"))
+                .andExpect(status().isUnauthorized());
+    }
 }

@@ -1,0 +1,201 @@
+<section class="page-container">
+  <button type="button" class="back-button" (click)="goBack()">
+    ← Retour
+  </button>
+
+  <div *ngIf="loading" class="info-card">
+    Chargement du détail de la simulation...
+  </div>
+
+  <div *ngIf="errorMessage" class="error-card">
+    {{ errorMessage }}
+  </div>
+
+  <article *ngIf="simulation && !loading" class="detail-card">
+    <header class="detail-header">
+      <div>
+        <p class="eyebrow">Simulation #{{ simulation.id }}</p>
+        <h1>{{ getSimulationTypeLabel() }}</h1>
+        <p>
+          Simulation lancée le
+          <strong>{{ simulation.createdAt | date:'dd/MM/yyyy HH:mm' }}</strong>
+          par
+          <strong>{{ simulation.createdBy }}</strong>.
+        </p>
+      </div>
+
+      <span
+        class="status-badge"
+        [class.success]="simulation.status === 'SUCCESS'"
+        [class.failed]="simulation.status === 'FAILED'"
+      >
+        {{ simulation.status }}
+      </span>
+    </header>
+
+    <section class="section-block">
+      <h2>Contexte</h2>
+
+      <div class="info-grid">
+        <div>
+          <span>Mission</span>
+          <strong>{{ simulation.missionName }}</strong>
+        </div>
+
+        <div>
+          <span>Satellite</span>
+          <strong>{{ simulation.satelliteName }}</strong>
+        </div>
+
+        <div>
+          <span>Type</span>
+          <strong>{{ simulation.type }}</strong>
+        </div>
+
+        <div>
+          <span>Auteur</span>
+          <strong>{{ simulation.createdBy }}</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-block">
+      <h2>Paramètres utilisés</h2>
+
+      <div class="info-grid">
+        <div>
+          <span>Masse</span>
+          <strong>{{ simulation.inputMassKg }} kg</strong>
+        </div>
+
+        <div>
+          <span>Altitude initiale</span>
+          <strong>{{ simulation.inputAltitudeKm }} km</strong>
+        </div>
+
+        <div>
+          <span>Inclinaison</span>
+          <strong>{{ simulation.inputInclinationDeg }}°</strong>
+        </div>
+
+        <div>
+          <span>Excentricité</span>
+          <strong>{{ simulation.inputEccentricity }}</strong>
+        </div>
+
+        <div *ngIf="simulation.type === 'HOHMANN'">
+          <span>Altitude cible</span>
+          <strong>{{ simulation.targetAltitudeKm }} km</strong>
+        </div>
+      </div>
+    </section>
+
+    <section *ngIf="simulation.type === 'ORBIT'" class="section-block">
+      <h2>Résultats orbitaux</h2>
+
+      <div class="info-grid">
+        <div>
+          <span>Période orbitale</span>
+          <strong>{{ simulation.orbitalPeriodMinutes }} min</strong>
+        </div>
+
+        <div>
+          <span>Vitesse moyenne</span>
+          <strong>{{ simulation.averageVelocityKmS }} km/s</strong>
+        </div>
+
+        <div>
+          <span>Forme de l’orbite</span>
+          <strong>{{ simulation.orbitShape }}</strong>
+        </div>
+      </div>
+
+      <div class="visualization-card">
+        <svg viewBox="0 0 320 320" class="orbit-svg" role="img" aria-label="Visualisation orbitale">
+          <defs>
+            <radialGradient id="earthGradientDetailOrbit" cx="35%" cy="35%" r="70%">
+              <stop offset="0%" stop-color="#7dd3fc"></stop>
+              <stop offset="45%" stop-color="#0284c7"></stop>
+              <stop offset="100%" stop-color="#0f172a"></stop>
+            </radialGradient>
+          </defs>
+
+          <ellipse
+            [attr.cx]="getOrbitEllipse().cx"
+            [attr.cy]="getOrbitEllipse().cy"
+            [attr.rx]="getOrbitEllipse().rx"
+            [attr.ry]="getOrbitEllipse().ry"
+            class="orbit-path"
+          ></ellipse>
+
+          <circle
+            cx="160"
+            cy="160"
+            [attr.r]="getEarthRadius()"
+            class="earth-body"
+            fill="url(#earthGradientDetailOrbit)"
+          ></circle>
+
+          <circle
+            [attr.cx]="getSatelliteMarker().cx"
+            [attr.cy]="getSatelliteMarker().cy"
+            r="4"
+            class="satellite-marker"
+          ></circle>
+        </svg>
+      </div>
+    </section>
+
+    <section *ngIf="simulation.type === 'HOHMANN'" class="section-block">
+      <h2>Résultats Hohmann</h2>
+
+      <div class="info-grid">
+        <div>
+          <span>Δv départ</span>
+          <strong>{{ simulation.deltaV1MS }} m/s</strong>
+        </div>
+
+        <div>
+          <span>Δv arrivée</span>
+          <strong>{{ simulation.deltaV2MS }} m/s</strong>
+        </div>
+
+        <div>
+          <span>Δv total</span>
+          <strong>{{ simulation.deltaVTotalMS }} m/s</strong>
+        </div>
+
+        <div>
+          <span>Durée estimée</span>
+          <strong>{{ simulation.transferTimeMinutes }} min</strong>
+        </div>
+      </div>
+
+      <div *ngIf="hohmannPlotData" class="visualization-card">
+        <svg viewBox="0 0 320 320" class="orbit-svg" role="img" aria-label="Visualisation du transfert de Hohmann">
+          <defs>
+            <radialGradient id="earthGradientDetailHohmann" cx="35%" cy="35%" r="70%">
+              <stop offset="0%" stop-color="#7dd3fc"></stop>
+              <stop offset="45%" stop-color="#0284c7"></stop>
+              <stop offset="100%" stop-color="#0f172a"></stop>
+            </radialGradient>
+          </defs>
+
+          <circle cx="160" cy="160" r="18" class="earth-body" fill="url(#earthGradientDetailHohmann)"></circle>
+
+          <path [attr.d]="getHohmannPath(hohmannPlotData.initialOrbit)" class="hohmann-initial-orbit"></path>
+          <path [attr.d]="getHohmannPath(hohmannPlotData.targetOrbit)" class="hohmann-target-orbit"></path>
+          <path [attr.d]="getHohmannPath(hohmannPlotData.transferArc)" class="hohmann-transfer-arc"></path>
+
+          <circle cx="270" cy="160" r="4" class="satellite-marker"></circle>
+        </svg>
+      </div>
+    </section>
+
+    <section class="section-block">
+      <h2>Données techniques</h2>
+
+      <pre class="json-block">{{ simulation.plotDataJson }}</pre>
+    </section>
+  </article>
+</section>
