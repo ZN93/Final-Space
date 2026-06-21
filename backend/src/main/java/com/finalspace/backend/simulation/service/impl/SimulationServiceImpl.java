@@ -12,6 +12,9 @@ import com.finalspace.backend.simulation.SimulationStatus;
 import com.finalspace.backend.simulation.SimulationType;
 import com.finalspace.backend.simulation.dto.OrbitSimulationResult;
 import com.finalspace.backend.simulation.dto.SimulationResponse;
+import com.finalspace.backend.simulation.dto.HohmannTransferRequest;
+import com.finalspace.backend.simulation.dto.HohmannTransferResult;
+import com.finalspace.backend.simulation.service.HohmannTransferService;
 import com.finalspace.backend.simulation.service.OrbitSimulationService;
 import com.finalspace.backend.simulation.service.SimulationService;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +30,8 @@ public class SimulationServiceImpl implements SimulationService {
     private final SatelliteRepository satelliteRepository;
     private final SimulationRunRepository simulationRunRepository;
     private final OrbitSimulationService orbitSimulationService;
+
+    private final HohmannTransferService hohmannTransferService;
 
     @Override
     @Transactional
@@ -90,6 +95,47 @@ public class SimulationServiceImpl implements SimulationService {
         }
     }
 
+    @Override
+    @Transactional
+    public SimulationResponse launchHohmannTransfer(
+            Long satelliteId,
+            HohmannTransferRequest request,
+            String createdBy
+    ) {
+        Satellite satellite = satelliteRepository.findById(satelliteId)
+                .orElseThrow(() -> new ResourceNotFoundException("Satellite introuvable"));
+
+        validateSatelliteForSimulation(satellite);
+
+        HohmannTransferResult result = hohmannTransferService.simulate(
+                satellite.getAltitudeKm(),
+                request.altitudeTargetKm()
+        );
+
+        SimulationRun simulationRun = SimulationRun.builder()
+                .mission(satellite.getMission())
+                .satellite(satellite)
+                .type(SimulationType.HOHMANN)
+                .status(SimulationStatus.SUCCESS)
+                .inputMassKg(satellite.getMassKg())
+                .inputAltitudeKm(satellite.getAltitudeKm())
+                .inputInclinationDeg(satellite.getInclinationDeg())
+                .inputEccentricity(satellite.getEccentricity())
+                .targetAltitudeKm(request.altitudeTargetKm())
+                .deltaV1MS(result.deltaV1MS())
+                .deltaV2MS(result.deltaV2MS())
+                .deltaVTotalMS(result.deltaVTotalMS())
+                .transferTimeMinutes(result.transferTimeMinutes())
+                .plotDataJson(result.plotDataJson())
+                .createdAt(LocalDateTime.now())
+                .createdBy(createdBy)
+                .build();
+
+        SimulationRun savedRun = simulationRunRepository.save(simulationRun);
+
+        return toResponse(savedRun);
+    }
+
     private SimulationResponse toResponse(SimulationRun run) {
         return new SimulationResponse(
                 run.getId(),
@@ -106,6 +152,11 @@ public class SimulationServiceImpl implements SimulationService {
                 run.getOrbitalPeriodMinutes(),
                 run.getAverageVelocityKmS(),
                 run.getOrbitShape(),
+                run.getTargetAltitudeKm(),
+                run.getDeltaV1MS(),
+                run.getDeltaV2MS(),
+                run.getDeltaVTotalMS(),
+                run.getTransferTimeMinutes(),
                 run.getPlotDataJson(),
                 run.getCreatedAt(),
                 run.getCreatedBy()

@@ -309,5 +309,190 @@
         </p>
       </div>
     </section>
+    <section *ngIf="showHohmannSection()" class="simulation-section hohmann-section">
+      <div class="simulation-header">
+        <div>
+          <h2>Transfert de Hohmann</h2>
+          <p>
+            Estime le coût en Δv et la durée d’un changement d’orbite à partir de l’altitude actuelle du satellite.
+          </p>
+        </div>
+      </div>
+
+      <div *ngIf="!canLaunchOrbitSimulation()" class="info-card">
+        La manœuvre de Hohmann peut être lancée uniquement par un administrateur ou un opérateur sur un satellite actif.
+      </div>
+
+      <form
+        *ngIf="canLaunchOrbitSimulation()"
+        class="hohmann-form"
+        (ngSubmit)="launchHohmannTransfer()"
+      >
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="hohmannTargetAltitudeKm">Altitude cible (km)</label>
+            <input
+              id="hohmannTargetAltitudeKm"
+              name="hohmannTargetAltitudeKm"
+              type="number"
+              min="0.01"
+              step="0.01"
+              [(ngModel)]="hohmannTargetAltitudeKm"
+              required
+            />
+          </div>
+
+          <div class="form-group readonly-field">
+            <label>Altitude actuelle (km)</label>
+            <strong>{{ satellite.altitudeKm }} km</strong>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button
+            type="submit"
+            class="primary-button"
+            [disabled]="hohmannLaunching"
+          >
+            {{ hohmannLaunching ? 'Calcul...' : 'Lancer transfert de Hohmann' }}
+          </button>
+        </div>
+      </form>
+
+      <div *ngIf="hohmannErrorMessage" class="error-card">
+        {{ hohmannErrorMessage }}
+      </div>
+
+      <div *ngIf="hohmannResult" class="simulation-result">
+        <h3>Résultat de manœuvre #{{ hohmannResult.id }}</h3>
+
+        <div class="result-grid">
+          <div>
+            <span>Statut</span>
+            <strong>{{ hohmannResult.status }}</strong>
+          </div>
+
+          <div>
+            <span>Type</span>
+            <strong>{{ hohmannResult.type }}</strong>
+          </div>
+
+          <div>
+            <span>Altitude initiale</span>
+            <strong>{{ hohmannResult.inputAltitudeKm }} km</strong>
+          </div>
+
+          <div>
+            <span>Altitude cible</span>
+            <strong>{{ hohmannResult.targetAltitudeKm }} km</strong>
+          </div>
+
+          <div>
+            <span>Δv départ</span>
+            <strong>{{ hohmannResult.deltaV1MS }} m/s</strong>
+          </div>
+
+          <div>
+            <span>Δv arrivée</span>
+            <strong>{{ hohmannResult.deltaV2MS }} m/s</strong>
+          </div>
+
+          <div>
+            <span>Δv total</span>
+            <strong>{{ hohmannResult.deltaVTotalMS }} m/s</strong>
+          </div>
+
+          <div>
+            <span>Durée estimée</span>
+            <strong>{{ hohmannResult.transferTimeMinutes }} min</strong>
+          </div>
+
+          <div>
+            <span>Lancée par</span>
+            <strong>{{ hohmannResult.createdBy }}</strong>
+          </div>
+
+          <div>
+            <span>Date</span>
+            <strong>{{ hohmannResult.createdAt | date:'dd/MM/yyyy HH:mm' }}</strong>
+          </div>
+        </div>
+
+        <h4>Paramètres figés utilisés</h4>
+
+        <div class="result-grid">
+          <div>
+            <span>Masse</span>
+            <strong>{{ hohmannResult.inputMassKg }} kg</strong>
+          </div>
+
+          <div>
+            <span>Inclinaison</span>
+            <strong>{{ hohmannResult.inputInclinationDeg }}°</strong>
+          </div>
+
+          <div>
+            <span>Excentricité</span>
+            <strong>{{ hohmannResult.inputEccentricity }}</strong>
+          </div>
+        </div>
+
+        <h4>Visualisation 2D simplifiée</h4>
+
+        <div *ngIf="hohmannPlotData" class="hohmann-visualization">
+          <svg
+            viewBox="0 0 320 320"
+            class="orbit-svg"
+            role="img"
+            aria-label="Visualisation simplifiée du transfert de Hohmann"
+          >
+            <defs>
+              <radialGradient id="earthGradientHohmann" cx="35%" cy="35%" r="70%">
+                <stop offset="0%" stop-color="#7dd3fc"></stop>
+                <stop offset="45%" stop-color="#0284c7"></stop>
+                <stop offset="100%" stop-color="#0f172a"></stop>
+              </radialGradient>
+
+              <filter id="hohmannGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="1.2" result="coloredBlur"></feGaussianBlur>
+                <feMerge>
+                  <feMergeNode in="coloredBlur"></feMergeNode>
+                  <feMergeNode in="SourceGraphic"></feMergeNode>
+                </feMerge>
+              </filter>
+            </defs>
+
+            <circle
+              cx="160"
+              cy="160"
+              r="18"
+              class="earth-body"
+              fill="url(#earthGradientHohmann)"
+            ></circle>
+
+            <path
+              [attr.d]="getHohmannPath(hohmannPlotData.initialOrbit)"
+              class="hohmann-initial-orbit"
+            ></path>
+
+            <path
+              [attr.d]="getHohmannPath(hohmannPlotData.targetOrbit)"
+              class="hohmann-target-orbit"
+            ></path>
+
+            <path
+              [attr.d]="getHohmannPath(hohmannPlotData.transferArc)"
+              class="hohmann-transfer-arc"
+            ></path>
+
+            <circle cx="270" cy="160" r="4" class="satellite-marker"></circle>
+          </svg>
+        </div>
+
+        <p class="orbit-note">
+          Visualisation schématique : l’orbite initiale, l’orbite cible et l’arc de transfert sont représentés de manière simplifiée.
+        </p>
+      </div>
+    </section>
   </div>
 </section>

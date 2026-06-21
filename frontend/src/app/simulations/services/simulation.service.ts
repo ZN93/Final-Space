@@ -18,4 +18,14 @@ export class SimulationService {
       {}
     );
   }
+
+  launchHohmannTransfer(
+    satelliteId: number,
+    altitudeTargetKm: number
+  ): Observable<SimulationResponse> {
+    return this.http.post<SimulationResponse>(
+      `${this.apiUrl}/satellites/${satelliteId}/simulations/hohmann`,
+      { altitudeTargetKm }
+    );
+  }
 }

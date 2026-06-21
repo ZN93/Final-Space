@@ -1,5 +1,6 @@
 package com.finalspace.backend.simulation;
 
 public enum SimulationType {
-    ORBIT
+    ORBIT,
+    HOHMANN
 }

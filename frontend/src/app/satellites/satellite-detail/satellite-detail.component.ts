@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../auth/auth.service';
 import { Satellite, SatelliteUpdateRequest } from '../models/satellite.model';
 import { SatelliteService } from '../services/satellite.service';
-import { SimulationResponse, OrbitPlotPoint } from '../../simulations/models/simulation.model';
+import { HohmannPlotData, SimulationResponse, OrbitPlotPoint } from '../../simulations/models/simulation.model';
 import { SimulationService } from '../../simulations/services/simulation.service';
 
 @Component({
@@ -36,6 +36,12 @@ export class SatelliteDetailComponent implements OnInit {
   simulationResult: SimulationResponse | null = null;
   simulationErrorMessage = '';
   orbitPlotPoints: OrbitPlotPoint[] = [];
+
+  hohmannTargetAltitudeKm: number | null = null;
+  hohmannLaunching = false;
+  hohmannResult: SimulationResponse | null = null;
+  hohmannErrorMessage = '';
+  hohmannPlotData: HohmannPlotData | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -341,5 +347,86 @@ export class SatelliteDetailComponent implements OnInit {
       cx: ellipse.cx + ellipse.rx,
       cy: ellipse.cy
     };
+  }
+
+  launchHohmannTransfer(): void {
+    if (!this.satellite || !this.hohmannTargetAltitudeKm) {
+      this.hohmannErrorMessage = 'Veuillez saisir une altitude cible valide.';
+      return;
+    }
+
+    if (this.hohmannTargetAltitudeKm <= 0) {
+      this.hohmannErrorMessage = 'L’altitude cible doit être supérieure à 0 km.';
+      return;
+    }
+
+    if (this.hohmannTargetAltitudeKm === this.satellite.altitudeKm) {
+      this.hohmannErrorMessage = 'L’altitude cible doit être différente de l’altitude actuelle.';
+      return;
+    }
+
+    this.hohmannLaunching = true;
+    this.hohmannErrorMessage = '';
+    this.hohmannResult = null;
+    this.hohmannPlotData = null;
+
+    this.simulationService
+      .launchHohmannTransfer(this.satellite.id, this.hohmannTargetAltitudeKm)
+      .subscribe({
+        next: (result) => {
+          this.hohmannResult = result;
+          this.hohmannPlotData = this.parseHohmannPlotData(result.plotDataJson);
+          this.hohmannLaunching = false;
+        },
+        error: () => {
+          this.hohmannErrorMessage = 'Impossible de lancer la manœuvre de Hohmann.';
+          this.hohmannLaunching = false;
+        }
+      });
+  }
+
+  private parseHohmannPlotData(plotDataJson: string): HohmannPlotData | null {
+    try {
+      const parsed = JSON.parse(plotDataJson) as HohmannPlotData;
+
+      if (
+        !Array.isArray(parsed.initialOrbit) ||
+        !Array.isArray(parsed.targetOrbit) ||
+        !Array.isArray(parsed.transferArc)
+      ) {
+        return null;
+      }
+
+      return parsed;
+    } catch {
+      return null;
+    }
+  }
+
+  getHohmannPath(points: OrbitPlotPoint[] | undefined): string {
+    if (!points || points.length === 0) {
+      return '';
+    }
+
+    return points
+      .map((point, index) => {
+        const normalized = this.normalizeHohmannPoint(point);
+        return `${index === 0 ? 'M' : 'L'} ${normalized.x} ${normalized.y}`;
+      })
+      .join(' ');
+  }
+
+  private normalizeHohmannPoint(point: OrbitPlotPoint): { x: number; y: number } {
+    const center = 160;
+    const scale = 110;
+
+    return {
+      x: center + point.x * scale,
+      y: center - point.y * scale
+    };
+  }
+
+  showHohmannSection(): boolean {
+    return this.canLaunchOrbitSimulation() || this.hohmannResult !== null;
   }
 }

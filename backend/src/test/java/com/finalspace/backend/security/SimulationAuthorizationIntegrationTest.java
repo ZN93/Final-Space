@@ -17,6 +17,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -231,5 +232,109 @@ class SimulationAuthorizationIntegrationTest {
                 .build();
 
         return satelliteRepository.save(satellite);
+    }
+
+    private String hohmannRequestJson(Double altitudeTargetKm) {
+        return """
+            {
+              "altitudeTargetKm": %s
+            }
+            """.formatted(altitudeTargetKm);
+    }
+
+    @Test
+    void adminShouldLaunchHohmannTransfer() throws Exception {
+        String token = loginAndGetToken("admin@finalspace.com", "admin123");
+        Satellite satellite = createActiveSatellite();
+
+        mockMvc.perform(post("/api/satellites/{id}/simulations/hohmann", satellite.getId())
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(hohmannRequestJson(800.0)))
+                .andExpect(status().isCreated())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.type").value("HOHMANN"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.status").value("SUCCESS"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.targetAltitudeKm").value(800.0))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.deltaV1MS").isNumber())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.deltaV2MS").isNumber())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.deltaVTotalMS").isNumber())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.transferTimeMinutes").isNumber());
+
+        assertEquals(1, simulationRunRepository.findBySatelliteIdOrderByCreatedAtDesc(satellite.getId()).size());
+    }
+
+    @Test
+    void operatorShouldLaunchHohmannTransfer() throws Exception {
+        String token = loginAndGetToken("operator@finalspace.com", "operator123");
+        Satellite satellite = createActiveSatellite();
+
+        mockMvc.perform(post("/api/satellites/{id}/simulations/hohmann", satellite.getId())
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(hohmannRequestJson(900.0)))
+                .andExpect(status().isCreated())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.type").value("HOHMANN"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.status").value("SUCCESS"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.targetAltitudeKm").value(900.0));
+
+        assertEquals(1, simulationRunRepository.findBySatelliteIdOrderByCreatedAtDesc(satellite.getId()).size());
+    }
+
+    @Test
+    void readerShouldNotLaunchHohmannTransfer() throws Exception {
+        String token = loginAndGetToken("reader@finalspace.com", "reader123");
+        Satellite satellite = createActiveSatellite();
+
+        mockMvc.perform(post("/api/satellites/{id}/simulations/hohmann", satellite.getId())
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(hohmannRequestJson(800.0)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void unauthenticatedUserShouldNotLaunchHohmannTransfer() throws Exception {
+        Satellite satellite = createActiveSatellite();
+
+        mockMvc.perform(post("/api/satellites/{id}/simulations/hohmann", satellite.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(hohmannRequestJson(800.0)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void shouldRejectHohmannTransferOnInactiveSatellite() throws Exception {
+        String token = loginAndGetToken("admin@finalspace.com", "admin123");
+        Satellite satellite = createInactiveSatellite();
+
+        mockMvc.perform(post("/api/satellites/{id}/simulations/hohmann", satellite.getId())
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(hohmannRequestJson(800.0)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldRejectHohmannTransferWithSameAltitude() throws Exception {
+        String token = loginAndGetToken("admin@finalspace.com", "admin123");
+        Satellite satellite = createActiveSatellite();
+
+        mockMvc.perform(post("/api/satellites/{id}/simulations/hohmann", satellite.getId())
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(hohmannRequestJson(satellite.getAltitudeKm())))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldRejectHohmannTransferWithNegativeTargetAltitude() throws Exception {
+        String token = loginAndGetToken("admin@finalspace.com", "admin123");
+        Satellite satellite = createActiveSatellite();
+
+        mockMvc.perform(post("/api/satellites/{id}/simulations/hohmann", satellite.getId())
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(hohmannRequestJson(-100.0)))
+                .andExpect(status().isBadRequest());
     }
 }

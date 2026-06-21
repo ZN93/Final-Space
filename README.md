@@ -665,6 +665,201 @@ Le MVP ne couvre pas encore :
 - le détail d’un run de simulation accessible par URL.
 
 Une évolution future pourra extraire le moteur de calcul dans un service dédié ou utiliser une bibliothèque spécialisée de mécanique orbitale.
+
+---
+
+## Manœuvre de transfert de Hohmann
+
+L’application permet de lancer une manœuvre de transfert de Hohmann depuis la page détail d’un satellite actif.
+
+Le transfert de Hohmann est une manœuvre orbitale analytique simplifiée permettant de passer d’une orbite circulaire à une autre en deux impulsions, dans le cadre d’un modèle à deux corps.
+
+Cette fonctionnalité permet d’estimer :
+
+- le Δv de départ ;
+- le Δv d’arrivée ;
+- le Δv total ;
+- la durée estimée du transfert ;
+- l’orbite initiale ;
+- l’orbite cible ;
+- l’arc de transfert.
+
+Chaque manœuvre crée un nouveau run de simulation persisté en base de données avec le type `HOHMANN`.
+
+---
+
+### Choix d’implémentation
+
+La manœuvre de Hohmann réutilise l’entité `SimulationRun`, déjà introduite pour les simulations orbitales.
+
+Le champ `type` permet de distinguer les différents types de simulations :
+
+```text
+ORBIT
+HOHMANN
+```
+
+Ce choix évite de créer une entité dédiée pour chaque type de simulation et permet de conserver une logique commune :
+
+- satellite associé ;
+- mission associée ;
+- auteur du lancement ;
+- date de création ;
+- statut du run ;
+- paramètres figés ;
+- résultats calculés ;
+- données de visualisation.
+
+Les champs spécifiques au transfert de Hohmann sont optionnels et renseignés uniquement lorsque le run est de type `HOHMANN`.
+
+---
+
+### Endpoint de lancement
+
+| Méthode | Endpoint | Description | Rôles autorisés |
+|---|---|---|---|
+| `POST` | `/api/satellites/{id}/simulations/hohmann` | Lancer une manœuvre de transfert de Hohmann | ADMIN, OPERATEUR |
+
+Le rôle `LECTEUR` peut consulter les données accessibles mais ne peut pas lancer de manœuvre.
+
+---
+
+### Exemple de requête
+
+```http
+POST /api/satellites/3/simulations/hohmann
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+Body :
+
+```json
+{
+  "altitudeTargetKm": 800
+}
+```
+
+Réponse :
+
+```json
+{
+  "id": 21,
+  "missionId": 4,
+  "missionName": "Mission to the MOOOOON",
+  "satelliteId": 3,
+  "satelliteName": "LunaSat-03",
+  "type": "HOHMANN",
+  "status": "SUCCESS",
+  "inputMassKg": 850.0,
+  "inputAltitudeKm": 500.0,
+  "inputInclinationDeg": 95.0,
+  "inputEccentricity": 0.4,
+  "orbitalPeriodMinutes": null,
+  "averageVelocityKmS": null,
+  "orbitShape": null,
+  "targetAltitudeKm": 800.0,
+  "deltaV1MS": 80.93,
+  "deltaV2MS": 80.07,
+  "deltaVTotalMS": 161.0,
+  "transferTimeMinutes": 48.79,
+  "plotDataJson": "{...}",
+  "createdAt": "2026-06-14T20:21:00",
+  "createdBy": "admin@finalspace.com"
+}
+```
+
+---
+
+### Données persistées
+
+Les manœuvres de Hohmann sont enregistrées dans la table des runs de simulation.
+
+| Champ | Description |
+|---|---|
+| `id` | Identifiant du run de simulation |
+| `missionId` | Mission associée |
+| `satelliteId` | Satellite simulé |
+| `type` | Type de simulation, ici `HOHMANN` |
+| `status` | Statut du run, actuellement `SUCCESS` ou `FAILED` |
+| `inputMassKg` | Masse figée utilisée lors du lancement |
+| `inputAltitudeKm` | Altitude initiale figée au lancement |
+| `inputInclinationDeg` | Inclinaison figée au lancement |
+| `inputEccentricity` | Excentricité figée au lancement |
+| `targetAltitudeKm` | Altitude cible saisie par l’utilisateur |
+| `deltaV1MS` | Δv de la première impulsion en m/s |
+| `deltaV2MS` | Δv de la seconde impulsion en m/s |
+| `deltaVTotalMS` | Δv total de la manœuvre en m/s |
+| `transferTimeMinutes` | Durée estimée du transfert en minutes |
+| `plotDataJson` | Données de visualisation 2D simplifiée |
+| `createdAt` | Date de lancement |
+| `createdBy` | Utilisateur ayant lancé la manœuvre |
+
+---
+
+### Règles métier
+
+| Règle | Description |
+|---|---|
+| Satellite actif | Une manœuvre ne peut être lancée que sur un satellite `ACTIF` |
+| Mission active | Une manœuvre ne peut pas être lancée si la mission est clôturée |
+| Altitude cible obligatoire | L’altitude cible doit être renseignée |
+| Altitude cible positive | L’altitude cible doit être strictement supérieure à 0 |
+| Altitude cible différente | L’altitude cible doit être différente de l’altitude initiale |
+| Paramètres figés | Les paramètres utilisés sont copiés dans le run au moment du lancement |
+| Nouveau run | Chaque lancement crée une nouvelle simulation |
+| Sécurité | Seuls ADMIN et OPERATEUR peuvent lancer une manœuvre |
+
+---
+
+### Résultats affichés côté frontend
+
+La page détail satellite affiche après lancement :
+
+- le statut du run ;
+- le type de simulation ;
+- l’altitude initiale ;
+- l’altitude cible ;
+- le Δv de départ ;
+- le Δv d’arrivée ;
+- le Δv total ;
+- la durée estimée du transfert ;
+- l’utilisateur ayant lancé la manœuvre ;
+- la date de lancement ;
+- les paramètres figés utilisés ;
+- une visualisation 2D simplifiée du transfert.
+
+---
+
+### Visualisation 2D
+
+La visualisation de Hohmann représente de manière schématique :
+
+- l’orbite initiale ;
+- l’orbite cible ;
+- l’arc de transfert ;
+- la Terre au centre du repère.
+
+Cette visualisation reste volontairement simplifiée et ne cherche pas à reproduire une simulation physique complète.
+
+---
+
+### Limites actuelles
+
+La manœuvre de Hohmann reste volontairement simplifiée.
+
+Le MVP ne couvre pas encore :
+
+- les manœuvres bi-elliptiques ;
+- les changements de plan orbital ;
+- les perturbations physiques ;
+- les trajectoires multi-corps ;
+- l’optimisation avancée de trajectoire ;
+- l’historique complet des simulations côté UI ;
+- le détail d’un run de simulation accessible par URL.
+
+Une évolution future pourra isoler le moteur de calcul dans un service dédié ou utiliser une bibliothèque spécialisée de mécanique orbitale.
+
 ---
 
 ### Paramètres orbitaux disponibles
