@@ -6,6 +6,9 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.finalspace.backend.telemetry.TelemetryImportException;
+import com.finalspace.backend.telemetry.dto.TelemetryImportResponse;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -39,5 +42,19 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(errorMessage);
+    }
+
+    @ExceptionHandler(TelemetryImportException.class)
+    public ResponseEntity<TelemetryImportResponse> handleTelemetryImportException(
+            TelemetryImportException exception
+    ) {
+        return ResponseEntity.badRequest().body(
+                new TelemetryImportResponse(
+                        null,
+                        0,
+                        exception.getErrors().size(),
+                        exception.getErrors()
+                )
+        );
     }
 }

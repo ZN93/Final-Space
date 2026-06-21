@@ -12,6 +12,11 @@ import {
   SimulationResponse,
   OrbitPlotPoint
 } from '../../simulations/models/simulation.model';
+import { TelemetryService } from '../../telemetry/services/telemetry.service';
+import {
+  TelemetryImportError,
+  TelemetryImportResponse
+} from '../../telemetry/models/telemetry-import.model';
 
 @Component({
   selector: 'app-satellite-detail',
@@ -51,11 +56,19 @@ export class SatelliteDetailComponent implements OnInit {
   simulationHistoryLoading = false;
   simulationHistoryErrorMessage = '';
 
+  selectedTelemetryFile: File | null = null;
+  telemetryImporting = false;
+  telemetryImportSuccessMessage = '';
+  telemetryImportErrorMessage = '';
+  telemetryImportErrors: TelemetryImportError[] = [];
+  telemetryImportResult: TelemetryImportResponse | null = null;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private satelliteService: SatelliteService,
     private simulationService: SimulationService,
+    private telemetryService: TelemetryService,
     private authService: AuthService
   ) {}
 
@@ -491,5 +504,80 @@ export class SatelliteDetailComponent implements OnInit {
     }
 
     return type;
+  }
+
+  canImportTelemetry(): boolean {
+    return this.canManage() && this.satellite?.status === 'ACTIF';
+  }
+
+  onTelemetryFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+
+    this.selectedTelemetryFile = file;
+    this.telemetryImportSuccessMessage = '';
+    this.telemetryImportErrorMessage = '';
+    this.telemetryImportErrors = [];
+    this.telemetryImportResult = null;
+  }
+
+  importTelemetryCsv(): void {
+    if (!this.satellite || !this.canImportTelemetry()) {
+      return;
+    }
+
+    if (!this.selectedTelemetryFile) {
+      this.telemetryImportErrorMessage = 'Veuillez sélectionner un fichier CSV.';
+      this.telemetryImportErrors = [];
+      return;
+    }
+
+    if (!this.selectedTelemetryFile.name.toLowerCase().endsWith('.csv')) {
+      this.telemetryImportErrorMessage = 'Le fichier doit être au format CSV.';
+      this.telemetryImportErrors = [];
+      return;
+    }
+
+    this.telemetryImporting = true;
+    this.telemetryImportSuccessMessage = '';
+    this.telemetryImportErrorMessage = '';
+    this.telemetryImportErrors = [];
+    this.telemetryImportResult = null;
+
+    this.telemetryService
+      .importCsv(
+        this.satellite.missionId,
+        this.satellite.id,
+        this.selectedTelemetryFile
+      )
+      .subscribe({
+        next: (result) => {
+          this.telemetryImporting = false;
+          this.telemetryImportResult = result;
+          this.telemetryImportSuccessMessage =
+            `${result.importedCount} point(s) de télémétrie importé(s) avec succès.`;
+        },
+        error: (error) => {
+          this.telemetryImporting = false;
+
+          if (error.status === 403) {
+            this.router.navigate(['/forbidden']);
+            return;
+          }
+
+          if (error.status === 400 && error.error?.errors) {
+            this.telemetryImportErrorMessage = 'Le fichier CSV contient des erreurs.';
+            this.telemetryImportErrors = error.error.errors;
+            return;
+          }
+
+          if (error.status === 404) {
+            this.telemetryImportErrorMessage = 'Satellite ou mission introuvable.';
+            return;
+          }
+
+          this.telemetryImportErrorMessage = 'Impossible d’importer le fichier de télémétrie.';
+        }
+      });
   }
 }

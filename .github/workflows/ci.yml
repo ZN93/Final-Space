@@ -15,6 +15,21 @@ jobs:
     name: Backend - Build
     runs-on: ubuntu-latest
 
+    services:
+      mongodb:
+        image: mongo:7
+        env:
+          MONGO_INITDB_ROOT_USERNAME: finalspace
+          MONGO_INITDB_ROOT_PASSWORD: finalspace
+          MONGO_INITDB_DATABASE: finalspace_test
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --username finalspace --password finalspace --authenticationDatabase admin --eval 'db.adminCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     defaults:
       run:
         working-directory: backend
