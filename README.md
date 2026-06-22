@@ -1609,6 +1609,212 @@ Ces éléments sont prévus dans des user stories futures.
 
 ---
 
+## Visualisation des données de télémétrie
+
+L’application permet de visualiser les données de télémétrie importées sous forme de graphiques temporels.
+
+Cette fonctionnalité permet d’analyser l’évolution des métriques d’un satellite dans le temps, comme par exemple :
+
+* la température ;
+* le niveau de batterie ;
+* la vitesse ;
+* toute autre métrique importée via CSV.
+
+Les données affichées proviennent de MongoDB, dans la collection `telemetry_points`.
+
+---
+
+### Objectif
+
+La visualisation de télémétrie permet à un utilisateur authentifié de consulter les mesures associées à un satellite et d’observer leur évolution dans le temps.
+
+Les graphiques sont en lecture seule.
+
+---
+
+### Endpoints API
+
+| Méthode | Endpoint                                          | Description                                           | Rôles autorisés           |
+| ------- | ------------------------------------------------- | ----------------------------------------------------- | ------------------------- |
+| `GET`   | `/api/satellites/{satelliteId}/telemetry/metrics` | Récupérer les métriques disponibles pour un satellite | ADMIN, OPERATEUR, LECTEUR |
+| `GET`   | `/api/satellites/{satelliteId}/telemetry`         | Récupérer les points de télémétrie filtrés            | ADMIN, OPERATEUR, LECTEUR |
+
+---
+
+### Paramètres de recherche
+
+Endpoint :
+
+`GET /api/satellites/{satelliteId}/telemetry`
+
+| Paramètre | Obligatoire | Description                                                            |
+| --------- | ----------- | ---------------------------------------------------------------------- |
+| `metric`  | Oui         | Métrique à afficher. Peut être répétée pour afficher plusieurs courbes |
+| `from`    | Non         | Date de début au format ISO-8601                                       |
+| `to`      | Non         | Date de fin au format ISO-8601                                         |
+| `limit`   | Non         | Nombre maximum de points retournés                                     |
+
+Exemple :
+
+`GET /api/satellites/3/telemetry?metric=temperature&metric=battery&limit=5000`
+
+---
+
+### Réponse API
+
+Exemple de réponse :
+
+```json
+{
+  "satelliteId": 3,
+  "metrics": [
+    "temperature",
+    "battery"
+  ],
+  "count": 4,
+  "points": [
+    {
+      "timestamp": "2026-01-01T10:00:00Z",
+      "metric": "temperature",
+      "value": 40.0
+    },
+    {
+      "timestamp": "2026-01-01T10:05:00Z",
+      "metric": "temperature",
+      "value": 42.5
+    },
+    {
+      "timestamp": "2026-01-01T10:00:00Z",
+      "metric": "battery",
+      "value": 80.0
+    },
+    {
+      "timestamp": "2026-01-01T10:05:00Z",
+      "metric": "battery",
+      "value": 78.0
+    }
+  ]
+}
+```
+
+---
+
+### Règles métier
+
+| Règle                         | Description                                                                                     |
+| ----------------------------- | ----------------------------------------------------------------------------------------------- |
+| Données existantes uniquement | Seules les données de télémétrie déjà importées sont affichées                                  |
+| Métrique obligatoire          | Au moins une métrique doit être sélectionnée                                                    |
+| Tri chronologique             | Les points sont retournés dans l’ordre chronologique                                            |
+| Filtre période                | Les paramètres `from` et `to` permettent de filtrer sur une période                             |
+| Limitation de volume          | Le nombre de points retournés est limité                                                        |
+| Lecture seule                 | Les graphiques ne modifient aucune donnée                                                       |
+| Consultation après clôture    | Les données restent consultables même si la mission est clôturée ou si le satellite est inactif |
+| Sécurité                      | ADMIN, OPERATEUR et LECTEUR peuvent consulter                                                   |
+
+---
+
+### Frontend
+
+La page détail satellite affiche une section de visualisation de télémétrie.
+
+Cette section permet :
+
+* d’afficher les métriques disponibles ;
+* de sélectionner une ou plusieurs métriques ;
+* de filtrer par période ;
+* de rafraîchir les données à la demande ;
+* d’afficher les données sous forme de courbes temporelles ;
+* d’afficher les états vide, chargement et erreur.
+
+Les graphiques utilisent :
+
+* l’axe horizontal pour le temps ;
+* l’axe vertical pour la valeur de la métrique ;
+* une courbe par métrique sélectionnée.
+
+---
+
+### Tests réalisés
+
+Les tests backend couvrent :
+
+* la récupération des métriques disponibles ;
+* la lecture des données pour une métrique ;
+* la lecture de plusieurs métriques ;
+* le filtrage par période ;
+* le tri chronologique ;
+* la limitation du nombre de points ;
+* le rejet d’une requête sans métrique ;
+* le rejet d’une période invalide ;
+* le rejet d’un satellite inexistant ;
+* l’accès ADMIN ;
+* l’accès OPERATEUR ;
+* l’accès LECTEUR ;
+* le refus d’un utilisateur non authentifié.
+
+Résultat backend :
+
+```text
+Tests run: 196, Failures: 0, Errors: 0, Skipped: 0
+BUILD SUCCESS
+```
+
+Le build frontend a également été validé :
+
+```text
+Application bundle generation complete
+```
+
+---
+
+### Validation fonctionnelle
+
+La fonctionnalité a été validée dans le navigateur avec un fichier CSV de démonstration contenant 15 points de télémétrie.
+
+Cas validés :
+
+* import de données de télémétrie ;
+* détection automatique des métriques disponibles ;
+* affichage des métriques `battery`, `speed`, `temperature` ;
+* affichage d’une courbe par métrique ;
+* affichage de plusieurs métriques en même temps ;
+* filtrage par période ;
+* rafraîchissement manuel ;
+* consultation en lecture seule.
+
+---
+
+### Limites actuelles
+
+L’US16 ne couvre pas encore :
+
+* la visualisation temps réel ;
+* l’analyse statistique avancée ;
+* la personnalisation avancée des graphiques ;
+* les axes indépendants par métrique ;
+* la normalisation automatique des courbes ;
+* le zoom sur une période ;
+* l’export du graphique.
+
+Lorsque des métriques ont des ordres de grandeur très différents, par exemple `speed` autour de 7600 et `temperature` autour de 40, la courbe de plus grande valeur peut écraser visuellement les autres courbes.
+
+---
+
+### Perspectives d’évolution
+
+Évolutions possibles :
+
+* ajouter un axe vertical par métrique ;
+* normaliser les courbes pour comparer les tendances ;
+* ajouter un zoom temporel ;
+* afficher les valeurs min, max et moyenne ;
+* ajouter des seuils visuels ;
+* préparer la détection d’anomalies ;
+* ajouter un export CSV ou PDF des données affichées.
+
+---
+
 ## Dashboard mission
 
 L’application permet de consulter un dashboard synthétique pour une mission.

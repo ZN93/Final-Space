@@ -17,6 +17,20 @@ import {
   TelemetryImportError,
   TelemetryImportResponse
 } from '../../telemetry/models/telemetry-import.model';
+import { TelemetryPoint } from '../../telemetry/models/telemetry-query.model';
+
+interface TelemetryChartPoint {
+  x: number;
+  y: number;
+  timestamp: string;
+  value: number;
+}
+
+interface TelemetryChartSeries {
+  metric: string;
+  path: string;
+  points: TelemetryChartPoint[];
+}
 
 @Component({
   selector: 'app-satellite-detail',
@@ -63,6 +77,22 @@ export class SatelliteDetailComponent implements OnInit {
   telemetryImportErrors: TelemetryImportError[] = [];
   telemetryImportResult: TelemetryImportResponse | null = null;
 
+  availableTelemetryMetrics: string[] = [];
+  selectedTelemetryMetrics: string[] = [];
+
+  telemetryFrom = '';
+  telemetryTo = '';
+
+  telemetryLoading = false;
+  telemetryErrorMessage = '';
+  telemetryEmptyMessage = '';
+  telemetryPoints: TelemetryPoint[] = [];
+  telemetryChartSeries: TelemetryChartSeries[] = [];
+
+  readonly telemetryChartWidth = 900;
+  readonly telemetryChartHeight = 320;
+  readonly telemetryChartPadding = 48;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -91,6 +121,7 @@ export class SatelliteDetailComponent implements OnInit {
     this.satelliteService.findById(id).subscribe({
       next: (satellite) => {
         this.satellite = satellite;
+        this.loadTelemetryMetrics();
         this.editName = satellite.name;
         this.editMassKg = satellite.massKg ?? null;
         this.editAltitudeKm = satellite.altitudeKm ?? null;
@@ -556,6 +587,9 @@ export class SatelliteDetailComponent implements OnInit {
           this.telemetryImportResult = result;
           this.telemetryImportSuccessMessage =
             `${result.importedCount} point(s) de télémétrie importé(s) avec succès.`;
+
+          this.selectedTelemetryFile = null;
+          this.loadTelemetryMetrics();
         },
         error: (error) => {
           this.telemetryImporting = false;
@@ -579,5 +613,216 @@ export class SatelliteDetailComponent implements OnInit {
           this.telemetryImportErrorMessage = 'Impossible d’importer le fichier de télémétrie.';
         }
       });
+  }
+
+  loadTelemetryMetrics(): void {
+    if (!this.satellite) {
+      return;
+    }
+
+    this.telemetryErrorMessage = '';
+    this.telemetryEmptyMessage = '';
+
+    this.telemetryService.getAvailableMetrics(this.satellite.id).subscribe({
+      next: (metrics) => {
+        this.availableTelemetryMetrics = metrics;
+        this.selectedTelemetryMetrics = metrics.length > 0 ? [metrics[0]] : [];
+
+        if (metrics.length === 0) {
+          this.telemetryEmptyMessage = 'Aucune donnée de télémétrie disponible pour ce satellite.';
+          this.telemetryPoints = [];
+          this.telemetryChartSeries = [];
+        }
+      },
+      error: (error) => {
+        if (error.status === 403) {
+          this.router.navigate(['/forbidden']);
+          return;
+        }
+
+        this.telemetryErrorMessage = 'Impossible de charger les métriques de télémétrie.';
+      }
+    });
+  }
+
+  onTelemetryMetricToggle(metric: string, event: Event): void {
+    const input = event.target as HTMLInputElement;
+
+    if (input.checked) {
+      this.selectedTelemetryMetrics = [
+        ...this.selectedTelemetryMetrics,
+        metric
+      ];
+      return;
+    }
+
+    this.selectedTelemetryMetrics = this.selectedTelemetryMetrics.filter(
+      (selectedMetric) => selectedMetric !== metric
+    );
+  }
+
+  isTelemetryMetricSelected(metric: string): boolean {
+    return this.selectedTelemetryMetrics.includes(metric);
+  }
+
+  refreshTelemetryChart(): void {
+    if (!this.satellite) {
+      return;
+    }
+
+    if (this.selectedTelemetryMetrics.length === 0) {
+      this.telemetryErrorMessage = 'Sélectionne au moins une métrique à afficher.';
+      this.telemetryEmptyMessage = '';
+      this.telemetryPoints = [];
+      this.telemetryChartSeries = [];
+      return;
+    }
+
+    const fromIso = this.toIsoDateOrNull(this.telemetryFrom);
+    const toIso = this.toIsoDateOrNull(this.telemetryTo);
+
+    this.telemetryLoading = true;
+    this.telemetryErrorMessage = '';
+    this.telemetryEmptyMessage = '';
+    this.telemetryPoints = [];
+    this.telemetryChartSeries = [];
+
+    this.telemetryService
+      .getTelemetry(
+        this.satellite.id,
+        this.selectedTelemetryMetrics,
+        fromIso,
+        toIso
+      )
+      .subscribe({
+        next: (response) => {
+          this.telemetryLoading = false;
+          this.telemetryPoints = response.points;
+          this.telemetryChartSeries = this.buildTelemetryChartSeries(response.points);
+
+          if (response.points.length === 0) {
+            this.telemetryEmptyMessage = 'Aucune donnée ne correspond aux filtres sélectionnés.';
+          }
+        },
+        error: (error) => {
+          this.telemetryLoading = false;
+
+          if (error.status === 403) {
+            this.router.navigate(['/forbidden']);
+            return;
+          }
+
+          if (error.status === 400) {
+            this.telemetryErrorMessage = 'Les filtres de télémétrie sont invalides.';
+            return;
+          }
+
+          if (error.status === 404) {
+            this.telemetryErrorMessage = 'Satellite introuvable.';
+            return;
+          }
+
+          this.telemetryErrorMessage = 'Impossible de charger les données de télémétrie.';
+        }
+      });
+  }
+
+  private buildTelemetryChartSeries(points: TelemetryPoint[]): TelemetryChartSeries[] {
+    if (points.length === 0) {
+      return [];
+    }
+
+    const timestamps = points.map((point) => new Date(point.timestamp).getTime());
+    const values = points.map((point) => point.value);
+
+    const minTime = Math.min(...timestamps);
+    const maxTime = Math.max(...timestamps);
+    const minValue = Math.min(...values);
+    const maxValue = Math.max(...values);
+
+    const groupedByMetric = new Map<string, TelemetryPoint[]>();
+
+    points.forEach((point) => {
+      const metricPoints = groupedByMetric.get(point.metric) ?? [];
+      metricPoints.push(point);
+      groupedByMetric.set(point.metric, metricPoints);
+    });
+
+    return Array.from(groupedByMetric.entries()).map(([metric, metricPoints]) => {
+      const chartPoints = metricPoints
+        .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+        .map((point) => {
+          const time = new Date(point.timestamp).getTime();
+
+          return {
+            x: this.scaleValue(
+              time,
+              minTime,
+              maxTime,
+              this.telemetryChartPadding,
+              this.telemetryChartWidth - this.telemetryChartPadding
+            ),
+            y: this.scaleValue(
+              point.value,
+              minValue,
+              maxValue,
+              this.telemetryChartHeight - this.telemetryChartPadding,
+              this.telemetryChartPadding
+            ),
+            timestamp: point.timestamp,
+            value: point.value
+          };
+        });
+
+      return {
+        metric,
+        points: chartPoints,
+        path: this.buildSvgPath(chartPoints)
+      };
+    });
+  }
+
+  private buildSvgPath(points: TelemetryChartPoint[]): string {
+    return points
+      .map((point, index) => {
+        const command = index === 0 ? 'M' : 'L';
+        return `${command} ${point.x} ${point.y}`;
+      })
+      .join(' ');
+  }
+
+  private scaleValue(
+    value: number,
+    minSource: number,
+    maxSource: number,
+    minTarget: number,
+    maxTarget: number
+  ): number {
+    if (minSource === maxSource) {
+      return (minTarget + maxTarget) / 2;
+    }
+
+    return minTarget + ((value - minSource) * (maxTarget - minTarget)) / (maxSource - minSource);
+  }
+
+  private toIsoDateOrNull(value: string): string | null {
+    if (!value) {
+      return null;
+    }
+
+    return new Date(value).toISOString();
+  }
+
+  getTelemetrySeriesStroke(index: number): string {
+    const colors = [
+      '#38bdf8',
+      '#facc15',
+      '#22c55e',
+      '#f97316',
+      '#a855f7',
+      '#ef4444'
+    ];
+
+    return colors[index % colors.length];
   }
 }

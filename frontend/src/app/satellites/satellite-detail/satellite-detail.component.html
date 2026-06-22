@@ -602,6 +602,143 @@
         </div>
       </div>
     </section>
+    <section class="telemetry-chart-section">
+      <div class="simulation-header">
+        <div>
+          <h2>Visualisation de la télémétrie</h2>
+          <p>
+            Affiche les données de télémétrie importées sous forme de courbes temporelles.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          class="secondary-button"
+          (click)="refreshTelemetryChart()"
+          [disabled]="telemetryLoading || availableTelemetryMetrics.length === 0"
+        >
+          {{ telemetryLoading ? 'Chargement...' : 'Rafraîchir' }}
+        </button>
+      </div>
+
+      <div *ngIf="availableTelemetryMetrics.length === 0 && !telemetryLoading" class="info-card">
+        Aucune métrique de télémétrie disponible pour ce satellite.
+      </div>
+
+      <div *ngIf="availableTelemetryMetrics.length > 0" class="telemetry-filter-card">
+        <div class="telemetry-metric-list">
+          <label
+            *ngFor="let metric of availableTelemetryMetrics"
+            class="telemetry-metric-item"
+          >
+            <input
+              type="checkbox"
+              [checked]="isTelemetryMetricSelected(metric)"
+              (change)="onTelemetryMetricToggle(metric, $event)"
+            />
+            <span>{{ metric }}</span>
+          </label>
+        </div>
+
+        <div class="telemetry-period-grid">
+          <div class="form-group">
+            <label for="telemetryFrom">Début</label>
+            <input
+              id="telemetryFrom"
+              type="datetime-local"
+              [(ngModel)]="telemetryFrom"
+              name="telemetryFrom"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="telemetryTo">Fin</label>
+            <input
+              id="telemetryTo"
+              type="datetime-local"
+              [(ngModel)]="telemetryTo"
+              name="telemetryTo"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="telemetryErrorMessage" class="error-card">
+        {{ telemetryErrorMessage }}
+      </div>
+
+      <div *ngIf="telemetryEmptyMessage && telemetryChartSeries.length === 0" class="info-card">
+        {{ telemetryEmptyMessage }}
+      </div>
+
+      <div *ngIf="telemetryChartSeries.length > 0" class="telemetry-chart-card">
+        <div class="telemetry-chart-legend">
+          <div
+            *ngFor="let series of telemetryChartSeries; let index = index"
+            class="telemetry-legend-item"
+          >
+        <span
+          class="telemetry-legend-color"
+          [style.background]="getTelemetrySeriesStroke(index)"
+        ></span>
+            <strong>{{ series.metric }}</strong>
+          </div>
+        </div>
+
+        <div class="telemetry-chart-wrapper">
+          <svg
+            class="telemetry-chart"
+            [attr.viewBox]="'0 0 ' + telemetryChartWidth + ' ' + telemetryChartHeight"
+            role="img"
+            aria-label="Graphique de télémétrie"
+          >
+            <line
+              [attr.x1]="telemetryChartPadding"
+              [attr.y1]="telemetryChartHeight - telemetryChartPadding"
+              [attr.x2]="telemetryChartWidth - telemetryChartPadding"
+              [attr.y2]="telemetryChartHeight - telemetryChartPadding"
+              class="telemetry-axis"
+            ></line>
+
+            <line
+              [attr.x1]="telemetryChartPadding"
+              [attr.y1]="telemetryChartPadding"
+              [attr.x2]="telemetryChartPadding"
+              [attr.y2]="telemetryChartHeight - telemetryChartPadding"
+              class="telemetry-axis"
+            ></line>
+
+            <g *ngFor="let series of telemetryChartSeries; let index = index">
+              <path
+                [attr.d]="series.path"
+                fill="none"
+                [attr.stroke]="getTelemetrySeriesStroke(index)"
+                stroke-width="3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              ></path>
+
+              <circle
+                *ngFor="let point of series.points"
+                [attr.cx]="point.x"
+                [attr.cy]="point.y"
+                r="4"
+                [attr.fill]="getTelemetrySeriesStroke(index)"
+              >
+                <title>
+                  {{ series.metric }} — {{ point.value }} — {{ point.timestamp }}
+                </title>
+              </circle>
+            </g>
+          </svg>
+        </div>
+
+        <div class="telemetry-chart-summary">
+          <span>{{ telemetryPoints.length }} point(s) affiché(s)</span>
+          <span>{{ selectedTelemetryMetrics.length }} métrique(s) sélectionnée(s)</span>
+        </div>
+      </div>
+    </section>
     <section class="simulation-history-section">
       <div class="simulation-header">
         <div>
