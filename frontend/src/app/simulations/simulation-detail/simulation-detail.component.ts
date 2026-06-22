@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import {
   HohmannPlotData,
   OrbitPlotPoint,
@@ -11,7 +11,7 @@ import { SimulationService } from '../services/simulation.service';
 @Component({
   selector: 'app-simulation-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule],
   templateUrl: './simulation-detail.component.html',
   styleUrl: './simulation-detail.component.css'
 })
