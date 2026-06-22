@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { TelemetryImportResponse } from '../models/telemetry-import.model';
+import { TelemetryQueryResponse } from '../models/telemetry-query.model';
 
 @Injectable({
   providedIn: 'root'
@@ -23,6 +24,41 @@ export class TelemetryService {
     return this.http.post<TelemetryImportResponse>(
       `${this.apiUrl}/missions/${missionId}/satellites/${satelliteId}/telemetry/import`,
       formData
+    );
+  }
+
+  getAvailableMetrics(satelliteId: number): Observable<string[]> {
+    return this.http.get<string[]>(
+      `${this.apiUrl}/satellites/${satelliteId}/telemetry/metrics`
+    );
+  }
+
+  getTelemetry(
+    satelliteId: number,
+    metrics: string[],
+    from?: string | null,
+    to?: string | null,
+    limit = 5000
+  ): Observable<TelemetryQueryResponse> {
+    let params = new HttpParams();
+
+    metrics.forEach((metric) => {
+      params = params.append('metric', metric);
+    });
+
+    if (from) {
+      params = params.set('from', from);
+    }
+
+    if (to) {
+      params = params.set('to', to);
+    }
+
+    params = params.set('limit', limit);
+
+    return this.http.get<TelemetryQueryResponse>(
+      `${this.apiUrl}/satellites/${satelliteId}/telemetry`,
+      { params }
     );
   }
 }
