@@ -12,6 +12,7 @@ import com.finalspace.backend.telemetry.TelemetryPointRepository;
 import com.finalspace.backend.telemetry.dto.TelemetryImportError;
 import com.finalspace.backend.telemetry.dto.TelemetryImportResponse;
 import com.finalspace.backend.telemetry.service.TelemetryImportService;
+import com.finalspace.backend.telemetry.anomaly.service.TelemetryAnomalyDetectionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -34,6 +35,8 @@ public class TelemetryImportServiceImpl implements TelemetryImportService {
     private final SatelliteRepository satelliteRepository;
     private final TelemetryPointRepository telemetryPointRepository;
 
+    private final TelemetryAnomalyDetectionService telemetryAnomalyDetectionService;
+
     @Override
     public TelemetryImportResponse importCsv(
             Long missionId,
@@ -55,6 +58,7 @@ public class TelemetryImportServiceImpl implements TelemetryImportService {
         }
 
         telemetryPointRepository.saveAll(points);
+        detectAnomaliesForImportedPoints(satelliteId, points);
 
         return new TelemetryImportResponse(
                 importId,
@@ -217,6 +221,37 @@ public class TelemetryImportServiceImpl implements TelemetryImportService {
             ));
             return null;
         }
+    }
+
+    private void detectAnomaliesForImportedPoints(
+            Long satelliteId,
+            List<TelemetryPoint> points
+    ) {
+        if (points.isEmpty()) {
+            return;
+        }
+
+        List<String> metrics = points.stream()
+                .map(TelemetryPoint::getMetric)
+                .distinct()
+                .toList();
+
+        Instant from = points.stream()
+                .map(TelemetryPoint::getTimestamp)
+                .min(Instant::compareTo)
+                .orElse(null);
+
+        Instant to = points.stream()
+                .map(TelemetryPoint::getTimestamp)
+                .max(Instant::compareTo)
+                .orElse(null);
+
+        telemetryAnomalyDetectionService.detectAnomalies(
+                satelliteId,
+                metrics,
+                from,
+                to
+        );
     }
 
     private String normalizeCsvValue(String value) {

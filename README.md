@@ -1815,6 +1815,237 @@ Lorsque des métriques ont des ordres de grandeur très différents, par exemple
 
 ---
 
+## Détection automatique des anomalies de télémétrie
+
+L’application permet de détecter automatiquement des anomalies dans les données de télémétrie importées.
+
+Cette fonctionnalité analyse les points de télémétrie stockés dans MongoDB et applique des règles simples et déterministes afin d’identifier des comportements inhabituels.
+
+Les anomalies sont stockées dans MongoDB dans la collection :
+
+`telemetry_anomalies`
+
+---
+
+### Objectif
+
+La détection d’anomalies permet d’identifier automatiquement des valeurs ou évolutions suspectes dans les données de télémétrie d’un satellite.
+
+La détection peut être exécutée :
+
+* automatiquement après un import CSV de télémétrie ;
+* manuellement depuis l’interface utilisateur ;
+* manuellement via l’API.
+
+Les données de télémétrie ne sont pas modifiées par la détection.
+
+---
+
+### Types d’anomalies supportés
+
+| Type        | Description                                                   |
+| ----------- | ------------------------------------------------------------- |
+| `THRESHOLD` | Valeur supérieure ou inférieure à un seuil défini             |
+| `VARIATION` | Variation brutale entre deux points consécutifs               |
+| `MISSING`   | Absence de données sur une période supérieure au seuil défini |
+
+---
+
+### Sévérités
+
+| Sévérité  | Description                                          |
+| --------- | ---------------------------------------------------- |
+| `FAIBLE`  | Anomalie informative, par exemple données manquantes |
+| `MOYENNE` | Anomalie significative nécessitant une attention     |
+| `ELEVEE`  | Anomalie critique ou fortement suspecte              |
+
+---
+
+### Règles de détection MVP
+
+Les règles sont définies de manière statique dans le backend.
+
+| Métrique                      | Règle              | Sévérité  |
+| ----------------------------- | ------------------ | --------- |
+| `temperature > 60`            | Seuil d’alerte     | `MOYENNE` |
+| `temperature > 80`            | Seuil critique     | `ELEVEE`  |
+| `battery < 40`                | Seuil d’alerte     | `MOYENNE` |
+| `battery < 20`                | Seuil critique     | `ELEVEE`  |
+| `speed > 7800`                | Seuil d’alerte     | `MOYENNE` |
+| `speed > 8000`                | Seuil critique     | `ELEVEE`  |
+| variation `temperature > 10`  | Variation brutale  | `MOYENNE` |
+| variation `battery > 15`      | Variation brutale  | `MOYENNE` |
+| variation `speed > 150`       | Variation brutale  | `MOYENNE` |
+| écart temporel `> 10 minutes` | Données manquantes | `FAIBLE`  |
+
+---
+
+### Document MongoDB
+
+Chaque anomalie est stockée sous forme de document MongoDB.
+
+Champs principaux :
+
+* `missionId`
+* `satelliteId`
+* `metric`
+* `type`
+* `severity`
+* `timestamp`
+* `value`
+* `previousValue`
+* `previousTimestamp`
+* `ruleName`
+* `thresholdUsed`
+* `message`
+* `createdAt`
+
+Une contrainte de déduplication est appliquée sur :
+
+`satelliteId`, `metric`, `timestamp`, `type`, `ruleName`
+
+Cette clé évite de créer plusieurs fois la même anomalie pour un même point de télémétrie.
+
+---
+
+### Endpoints API
+
+| Méthode | Endpoint                                         | Description                       | Rôles autorisés           |
+| ------- | ------------------------------------------------ | --------------------------------- | ------------------------- |
+| `POST`  | `/api/satellites/{satelliteId}/anomalies/detect` | Lancer la détection d’anomalies   | ADMIN, OPERATEUR, LECTEUR |
+| `GET`   | `/api/satellites/{satelliteId}/anomalies`        | Consulter les anomalies détectées | ADMIN, OPERATEUR, LECTEUR |
+
+---
+
+### Paramètres
+
+| Paramètre | Obligatoire                                             | Description                           |
+| --------- | ------------------------------------------------------- | ------------------------------------- |
+| `metric`  | Non pour la consultation, obligatoire pour la détection | Une ou plusieurs métriques à analyser |
+| `from`    | Non                                                     | Date de début au format ISO-8601      |
+| `to`      | Non                                                     | Date de fin au format ISO-8601        |
+
+Exemple :
+
+`POST /api/satellites/3/anomalies/detect?metric=temperature&metric=battery&metric=speed`
+
+---
+
+### Réponse de détection
+
+Exemple de réponse :
+
+{
+"satelliteId": 3,
+"detectedCount": 12,
+"savedCount": 12,
+"anomalies": [
+{
+"id": "...",
+"missionId": 4,
+"satelliteId": 3,
+"metric": "temperature",
+"type": "THRESHOLD",
+"severity": "ELEVEE",
+"timestamp": "2026-01-01T10:10:00Z",
+"value": 85.0,
+"previousValue": null,
+"previousTimestamp": null,
+"ruleName": "threshold_temperature_critical_max",
+"thresholdUsed": 80.0,
+"message": "Valeur supérieure au seuil critique"
+}
+]
+}
+
+---
+
+### Règles métier
+
+| Règle                  | Description                                                             |
+| ---------------------- | ----------------------------------------------------------------------- |
+| Détection automatique  | Les anomalies sont détectées automatiquement après un import CSV valide |
+| Détection manuelle     | Un utilisateur autorisé peut relancer la détection                      |
+| Données non modifiées  | La détection ne modifie pas les points de télémétrie                    |
+| Anomalies enregistrées | Les anomalies détectées sont persistées dans MongoDB                    |
+| Déduplication          | Une même anomalie ne peut pas être enregistrée plusieurs fois           |
+| Consultation           | Les anomalies sont consultables depuis l’API et l’interface             |
+| Lecture autorisée      | ADMIN, OPERATEUR et LECTEUR peuvent consulter les anomalies             |
+| Reproductibilité       | Pour un même jeu de données, les règles produisent les mêmes anomalies  |
+
+---
+
+### Frontend
+
+La page détail satellite affiche une section `Anomalies détectées`.
+
+Cette section permet :
+
+* de consulter les anomalies existantes ;
+* de relancer une détection à la demande ;
+* de filtrer par métrique ;
+* de filtrer par période ;
+* d’afficher les types d’anomalies ;
+* d’afficher les sévérités ;
+* d’afficher les valeurs détectées ;
+* d’afficher les messages associés aux règles déclenchées.
+
+Les anomalies sont affichées dans un tableau en lecture seule.
+
+---
+
+### Tests réalisés
+
+Les tests backend couvrent :
+
+* la création automatique d’anomalies après import CSV ;
+* la consultation des anomalies ;
+* la détection manuelle ;
+* la déduplication des anomalies ;
+* la non-création de doublons lors d’une deuxième détection ;
+* les règles de seuil ;
+* les règles de variation ;
+* les règles de données manquantes ;
+* l’accès authentifié aux endpoints.
+
+Le frontend a été validé manuellement dans le navigateur :
+
+* affichage du tableau d’anomalies ;
+* affichage des badges de type ;
+* affichage des badges de sévérité ;
+* filtrage par métrique ;
+* relance de la détection ;
+* message indiquant le nombre d’anomalies détectées et enregistrées.
+
+---
+
+### Limites actuelles
+
+L’US17 ne couvre pas :
+
+* la détection par machine learning ;
+* l’apprentissage automatique ;
+* la configuration dynamique des règles ;
+* la priorisation automatique avancée ;
+* la correction automatique des anomalies ;
+* la création d’incidents à partir des anomalies.
+
+---
+
+### Perspectives d’évolution
+
+Évolutions possibles :
+
+* externaliser les règles dans une configuration YAML ;
+* ajouter une interface d’administration des seuils ;
+* générer automatiquement des alertes à partir des anomalies ;
+* créer des incidents depuis les anomalies critiques ;
+* afficher les anomalies directement sur les graphiques de télémétrie ;
+* ajouter des statistiques par métrique ;
+* ajouter des exports CSV/PDF des anomalies.
+
+---
+
 ## Dashboard mission
 
 L’application permet de consulter un dashboard synthétique pour une mission.
