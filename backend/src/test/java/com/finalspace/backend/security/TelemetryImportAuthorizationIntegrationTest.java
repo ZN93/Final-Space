@@ -7,6 +7,7 @@ import com.finalspace.backend.satellite.Satellite;
 import com.finalspace.backend.satellite.SatelliteRepository;
 import com.finalspace.backend.satellite.SatelliteStatus;
 import com.finalspace.backend.telemetry.TelemetryPointRepository;
+import com.finalspace.backend.telemetry.anomaly.TelemetryAnomalyRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,10 +45,14 @@ class TelemetryImportAuthorizationIntegrationTest {
     @Autowired
     private TelemetryPointRepository telemetryPointRepository;
 
+    @Autowired
+    private TelemetryAnomalyRepository telemetryAnomalyRepository;
+
     private final JsonMapper jsonMapper = new JsonMapper();
 
     @BeforeEach
     void cleanDatabase() {
+        telemetryAnomalyRepository.deleteAll();
         telemetryPointRepository.deleteAll();
         satelliteRepository.deleteAll();
         missionRepository.deleteAll();
@@ -277,5 +282,83 @@ class TelemetryImportAuthorizationIntegrationTest {
                 .build();
 
         return satelliteRepository.save(satellite);
+    }
+
+    @Test
+    void shouldAutomaticallyDetectAnomaliesAfterTelemetryImport() throws Exception {
+        String token = loginAndGetToken("admin@finalspace.com", "admin123");
+        Satellite satellite = createActiveSatellite();
+
+        mockMvc.perform(multipart("/api/missions/{missionId}/satellites/{satelliteId}/telemetry/import",
+                        satellite.getMission().getId(),
+                        satellite.getId())
+                        .file(anomalyCsvFile())
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.importedCount").value(12))
+                .andExpect(jsonPath("$.errorCount").value(0));
+
+        assertThat(telemetryPointRepository.findBySatelliteIdOrderByTimestampDesc(satellite.getId()))
+                .hasSize(12);
+
+        assertThat(telemetryAnomalyRepository.findBySatelliteIdOrderByTimestampDesc(satellite.getId()))
+                .isNotEmpty();
+    }
+
+    private MockMultipartFile anomalyCsvFile() {
+        return new MockMultipartFile(
+                "file",
+                "telemetry-anomalies.csv",
+                "text/csv",
+                """
+                timestamp,metric,value
+                2026-01-01T10:00:00Z,temperature,45.0
+                2026-01-01T10:05:00Z,temperature,62.0
+                2026-01-01T10:10:00Z,temperature,85.0
+                2026-01-01T10:30:00Z,temperature,50.0
+                2026-01-01T10:00:00Z,battery,78.0
+                2026-01-01T10:05:00Z,battery,55.0
+                2026-01-01T10:10:00Z,battery,35.0
+                2026-01-01T10:25:00Z,battery,18.0
+                2026-01-01T10:00:00Z,speed,7600.0
+                2026-01-01T10:05:00Z,speed,7820.0
+                2026-01-01T10:10:00Z,speed,8050.0
+                2026-01-01T10:35:00Z,speed,7700.0
+                """.getBytes(StandardCharsets.UTF_8)
+        );
+    }
+
+    @Test
+    void shouldNotDuplicateAnomaliesWhenDetectionIsRunTwice() throws Exception {
+        String token = loginAndGetToken("admin@finalspace.com", "admin123");
+        Satellite satellite = createActiveSatellite();
+
+        mockMvc.perform(multipart("/api/missions/{missionId}/satellites/{satelliteId}/telemetry/import",
+                        satellite.getMission().getId(),
+                        satellite.getId())
+                        .file(anomalyCsvFile())
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.importedCount").value(12))
+                .andExpect(jsonPath("$.errorCount").value(0));
+
+        int anomalyCountAfterImport =
+                telemetryAnomalyRepository.findBySatelliteIdOrderByTimestampDesc(satellite.getId()).size();
+
+        assertThat(anomalyCountAfterImport).isGreaterThan(0);
+
+        mockMvc.perform(post("/api/satellites/{satelliteId}/anomalies/detect", satellite.getId())
+                        .param("metric", "temperature")
+                        .param("metric", "battery")
+                        .param("metric", "speed")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.satelliteId").value(satellite.getId()))
+                .andExpect(jsonPath("$.savedCount").value(0));
+
+        int anomalyCountAfterSecondDetection =
+                telemetryAnomalyRepository.findBySatelliteIdOrderByTimestampDesc(satellite.getId()).size();
+
+        assertThat(anomalyCountAfterSecondDetection).isEqualTo(anomalyCountAfterImport);
     }
 }

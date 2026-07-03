@@ -739,6 +739,154 @@
         </div>
       </div>
     </section>
+    <section class="telemetry-anomaly-section">
+      <div class="simulation-header">
+        <div>
+          <h2>Anomalies détectées</h2>
+          <p>
+            Consulte les anomalies détectées automatiquement à partir des données de télémétrie
+            ou relance une détection à la demande.
+          </p>
+        </div>
+
+        <div class="anomaly-actions">
+          <button
+            type="button"
+            class="secondary-button"
+            (click)="loadTelemetryAnomalies()"
+            [disabled]="anomalyLoading || availableTelemetryMetrics.length === 0"
+          >
+            {{ anomalyLoading ? 'Chargement...' : 'Rafraîchir' }}
+          </button>
+
+          <button
+            type="button"
+            class="primary-button"
+            (click)="detectTelemetryAnomalies()"
+            [disabled]="anomalyDetecting || availableTelemetryMetrics.length === 0"
+          >
+            {{ anomalyDetecting ? 'Détection...' : 'Détecter les anomalies' }}
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="availableTelemetryMetrics.length === 0" class="info-card">
+        Aucune métrique de télémétrie disponible pour ce satellite.
+      </div>
+
+      <div *ngIf="availableTelemetryMetrics.length > 0" class="anomaly-filter-card">
+        <div class="telemetry-metric-list">
+          <label
+            *ngFor="let metric of availableTelemetryMetrics"
+            class="telemetry-metric-item"
+          >
+            <input
+              type="checkbox"
+              [checked]="isAnomalyMetricSelected(metric)"
+              (change)="onAnomalyMetricToggle(metric, $event)"
+            />
+            <span>{{ metric }}</span>
+          </label>
+        </div>
+
+        <div class="telemetry-period-grid">
+          <div class="form-group">
+            <label for="anomalyFrom">Début</label>
+            <input
+              id="anomalyFrom"
+              type="datetime-local"
+              [(ngModel)]="anomalyFrom"
+              name="anomalyFrom"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="anomalyTo">Fin</label>
+            <input
+              id="anomalyTo"
+              type="datetime-local"
+              [(ngModel)]="anomalyTo"
+              name="anomalyTo"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="anomalySuccessMessage" class="success-card">
+        {{ anomalySuccessMessage }}
+      </div>
+
+      <div *ngIf="anomalyErrorMessage" class="error-card">
+        {{ anomalyErrorMessage }}
+      </div>
+
+      <div *ngIf="anomalyEmptyMessage && telemetryAnomalies.length === 0" class="info-card">
+        {{ anomalyEmptyMessage }}
+      </div>
+
+      <div *ngIf="telemetryAnomalies.length > 0" class="anomaly-table-card">
+        <div class="anomaly-table-header">
+          <h3>{{ telemetryAnomalies.length }} anomalie(s)</h3>
+          <span>Résultats triés par date décroissante</span>
+        </div>
+
+        <div class="anomaly-table-wrapper">
+          <table class="anomaly-table">
+            <thead>
+            <tr>
+              <th>Date</th>
+              <th>Métrique</th>
+              <th>Type</th>
+              <th>Sévérité</th>
+              <th>Valeur</th>
+              <th>Règle</th>
+              <th>Message</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            <tr *ngFor="let anomaly of telemetryAnomalies">
+              <td>{{ formatTelemetryTimestamp(anomaly.timestamp) }}</td>
+
+              <td>
+                <strong>{{ anomaly.metric }}</strong>
+              </td>
+
+              <td>
+              <span
+                class="anomaly-badge"
+                [ngClass]="getAnomalyTypeClass(anomaly.type)"
+              >
+                {{ getAnomalyTypeLabel(anomaly.type) }}
+              </span>
+              </td>
+
+              <td>
+              <span
+                class="anomaly-badge"
+                [ngClass]="getAnomalySeverityClass(anomaly.severity)"
+              >
+                {{ getAnomalySeverityLabel(anomaly.severity) }}
+              </span>
+              </td>
+
+              <td>
+                <strong>{{ anomaly.value }}</strong>
+
+                <span *ngIf="anomaly.previousValue !== null && anomaly.previousValue !== undefined">
+                / précédent : {{ anomaly.previousValue }}
+              </span>
+              </td>
+
+              <td>{{ anomaly.ruleName }}</td>
+
+              <td>{{ anomaly.message }}</td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
     <section class="simulation-history-section">
       <div class="simulation-header">
         <div>

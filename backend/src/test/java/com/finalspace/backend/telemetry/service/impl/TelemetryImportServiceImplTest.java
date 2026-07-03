@@ -11,6 +11,7 @@ import com.finalspace.backend.telemetry.TelemetryImportException;
 import com.finalspace.backend.telemetry.TelemetryPoint;
 import com.finalspace.backend.telemetry.TelemetryPointRepository;
 import com.finalspace.backend.telemetry.dto.TelemetryImportResponse;
+import com.finalspace.backend.telemetry.anomaly.service.TelemetryAnomalyDetectionService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -36,6 +37,9 @@ class TelemetryImportServiceImplTest {
 
     @Mock
     private TelemetryPointRepository telemetryPointRepository;
+
+    @Mock
+    private TelemetryAnomalyDetectionService telemetryAnomalyDetectionService;
 
     @InjectMocks
     private TelemetryImportServiceImpl telemetryImportService;
@@ -80,6 +84,13 @@ class TelemetryImportServiceImplTest {
         assertThat(savedPoints.get(1).getMetric()).isEqualTo("battery");
         assertThat(savedPoints.get(1).getValue()).isEqualTo(78.0);
         assertThat(savedPoints.get(1).getSourceImportId()).isEqualTo(response.importId());
+
+        verify(telemetryAnomalyDetectionService).detectAnomalies(
+                eq(3L),
+                anyList(),
+                any(Instant.class),
+                any(Instant.class)
+        );
     }
 
     @Test
@@ -169,6 +180,13 @@ class TelemetryImportServiceImplTest {
         assertThat(response.errorCount()).isZero();
 
         verify(telemetryPointRepository).saveAll(anyList());
+
+        verify(telemetryAnomalyDetectionService).detectAnomalies(
+                eq(3L),
+                anyList(),
+                any(Instant.class),
+                any(Instant.class)
+        );
     }
 
     @Test

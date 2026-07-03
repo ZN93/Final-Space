@@ -18,6 +18,11 @@ import {
   TelemetryImportResponse
 } from '../../telemetry/models/telemetry-import.model';
 import { TelemetryPoint } from '../../telemetry/models/telemetry-query.model';
+import {
+  TelemetryAnomaly,
+  TelemetryAnomalySeverity,
+  TelemetryAnomalyType
+} from '../../telemetry/models/telemetry-anomaly.model';
 
 interface TelemetryChartPoint {
   x: number;
@@ -88,6 +93,19 @@ export class SatelliteDetailComponent implements OnInit {
   telemetryEmptyMessage = '';
   telemetryPoints: TelemetryPoint[] = [];
   telemetryChartSeries: TelemetryChartSeries[] = [];
+
+  selectedAnomalyMetrics: string[] = [];
+
+  anomalyFrom = '';
+  anomalyTo = '';
+
+  anomalyLoading = false;
+  anomalyDetecting = false;
+  anomalyErrorMessage = '';
+  anomalyEmptyMessage = '';
+  anomalySuccessMessage = '';
+
+  telemetryAnomalies: TelemetryAnomaly[] = [];
 
   readonly telemetryChartWidth = 900;
   readonly telemetryChartHeight = 320;
@@ -590,6 +608,7 @@ export class SatelliteDetailComponent implements OnInit {
 
           this.selectedTelemetryFile = null;
           this.loadTelemetryMetrics();
+          this.loadTelemetryAnomalies();
         },
         error: (error) => {
           this.telemetryImporting = false;
@@ -627,11 +646,15 @@ export class SatelliteDetailComponent implements OnInit {
       next: (metrics) => {
         this.availableTelemetryMetrics = metrics;
         this.selectedTelemetryMetrics = metrics.length > 0 ? [metrics[0]] : [];
+        this.selectedAnomalyMetrics = metrics;
 
         if (metrics.length === 0) {
           this.telemetryEmptyMessage = 'Aucune donnée de télémétrie disponible pour ce satellite.';
           this.telemetryPoints = [];
           this.telemetryChartSeries = [];
+          this.telemetryAnomalies = [];
+        } else {
+          this.loadTelemetryAnomalies();
         }
       },
       error: (error) => {
@@ -824,5 +847,177 @@ export class SatelliteDetailComponent implements OnInit {
     ];
 
     return colors[index % colors.length];
+  }
+
+  onAnomalyMetricToggle(metric: string, event: Event): void {
+    const input = event.target as HTMLInputElement;
+
+    if (input.checked) {
+      this.selectedAnomalyMetrics = [
+        ...this.selectedAnomalyMetrics,
+        metric
+      ];
+      return;
+    }
+
+    this.selectedAnomalyMetrics = this.selectedAnomalyMetrics.filter(
+      (selectedMetric) => selectedMetric !== metric
+    );
+  }
+
+  isAnomalyMetricSelected(metric: string): boolean {
+    return this.selectedAnomalyMetrics.includes(metric);
+  }
+
+  loadTelemetryAnomalies(): void {
+    if (!this.satellite) {
+      return;
+    }
+
+    const fromIso = this.toIsoDateOrNull(this.anomalyFrom);
+    const toIso = this.toIsoDateOrNull(this.anomalyTo);
+
+    this.anomalyLoading = true;
+    this.anomalyErrorMessage = '';
+    this.anomalyEmptyMessage = '';
+    this.anomalySuccessMessage = '';
+
+    this.telemetryService
+      .getAnomalies(
+        this.satellite.id,
+        this.selectedAnomalyMetrics,
+        fromIso,
+        toIso
+      )
+      .subscribe({
+        next: (response) => {
+          this.anomalyLoading = false;
+          this.telemetryAnomalies = response.anomalies;
+
+          if (response.anomalies.length === 0) {
+            this.anomalyEmptyMessage = 'Aucune anomalie détectée pour les filtres sélectionnés.';
+          }
+        },
+        error: (error) => {
+          this.anomalyLoading = false;
+
+          if (error.status === 403) {
+            this.router.navigate(['/forbidden']);
+            return;
+          }
+
+          if (error.status === 400) {
+            this.anomalyErrorMessage = 'Les filtres d’anomalies sont invalides.';
+            return;
+          }
+
+          if (error.status === 404) {
+            this.anomalyErrorMessage = 'Satellite introuvable.';
+            return;
+          }
+
+          this.anomalyErrorMessage = 'Impossible de charger les anomalies.';
+        }
+      });
+  }
+
+  detectTelemetryAnomalies(): void {
+    if (!this.satellite) {
+      return;
+    }
+
+    if (this.selectedAnomalyMetrics.length === 0) {
+      this.anomalyErrorMessage = 'Sélectionne au moins une métrique pour lancer la détection.';
+      this.anomalySuccessMessage = '';
+      return;
+    }
+
+    const fromIso = this.toIsoDateOrNull(this.anomalyFrom);
+    const toIso = this.toIsoDateOrNull(this.anomalyTo);
+
+    this.anomalyDetecting = true;
+    this.anomalyErrorMessage = '';
+    this.anomalyEmptyMessage = '';
+    this.anomalySuccessMessage = '';
+
+    this.telemetryService
+      .detectAnomalies(
+        this.satellite.id,
+        this.selectedAnomalyMetrics,
+        fromIso,
+        toIso
+      )
+      .subscribe({
+        next: (response) => {
+          this.anomalyDetecting = false;
+
+          this.anomalySuccessMessage =
+            `${response.detectedCount} anomalie(s) détectée(s), ${response.savedCount} nouvelle(s) anomalie(s) enregistrée(s).`;
+
+          this.loadTelemetryAnomalies();
+        },
+        error: (error) => {
+          this.anomalyDetecting = false;
+
+          if (error.status === 403) {
+            this.router.navigate(['/forbidden']);
+            return;
+          }
+
+          if (error.status === 400) {
+            this.anomalyErrorMessage = 'Les filtres de détection sont invalides.';
+            return;
+          }
+
+          if (error.status === 404) {
+            this.anomalyErrorMessage = 'Satellite introuvable.';
+            return;
+          }
+
+          this.anomalyErrorMessage = 'Impossible de détecter les anomalies.';
+        }
+      });
+  }
+
+  getAnomalyTypeLabel(type: TelemetryAnomalyType): string {
+    switch (type) {
+      case 'THRESHOLD':
+        return 'Seuil';
+      case 'VARIATION':
+        return 'Variation';
+      case 'MISSING':
+        return 'Données manquantes';
+      default:
+        return type;
+    }
+  }
+
+  getAnomalySeverityLabel(severity: TelemetryAnomalySeverity): string {
+    switch (severity) {
+      case 'FAIBLE':
+        return 'Faible';
+      case 'MOYENNE':
+        return 'Moyenne';
+      case 'ELEVEE':
+        return 'Élevée';
+      default:
+        return severity;
+    }
+  }
+
+  getAnomalyTypeClass(type: TelemetryAnomalyType): string {
+    return `anomaly-type-${type.toLowerCase()}`;
+  }
+
+  getAnomalySeverityClass(severity: TelemetryAnomalySeverity): string {
+    return `anomaly-severity-${severity.toLowerCase()}`;
+  }
+
+  formatTelemetryTimestamp(timestamp: string | null | undefined): string {
+    if (!timestamp) {
+      return '-';
+    }
+
+    return new Date(timestamp).toLocaleString('fr-FR');
   }
 }
