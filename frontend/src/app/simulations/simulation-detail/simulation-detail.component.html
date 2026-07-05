@@ -33,6 +33,43 @@
       </span>
     </header>
 
+    <section class="section-block export-section">
+      <div>
+        <h2>Exports</h2>
+        <p>
+          Télécharge les résultats enregistrés de cette simulation au format CSV ou PDF.
+        </p>
+      </div>
+
+      <div class="export-actions">
+        <button
+          type="button"
+          class="export-button secondary"
+          (click)="exportSimulation('csv')"
+          [disabled]="exportLoading"
+        >
+          {{ exportLoading ? 'Export en cours...' : 'Exporter CSV' }}
+        </button>
+
+        <button
+          type="button"
+          class="export-button primary"
+          (click)="exportSimulation('pdf')"
+          [disabled]="exportLoading"
+        >
+          {{ exportLoading ? 'Export en cours...' : 'Exporter PDF' }}
+        </button>
+      </div>
+
+      <div *ngIf="exportSuccessMessage" class="success-card">
+        {{ exportSuccessMessage }}
+      </div>
+
+      <div *ngIf="exportErrorMessage" class="error-card">
+        {{ exportErrorMessage }}
+      </div>
+    </section>
+
     <section class="section-block">
       <h2>Contexte</h2>
 
