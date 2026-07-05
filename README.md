@@ -2282,6 +2282,196 @@ L’US18 ne couvre pas :
 - corrélation avancée ;
 - création automatique d’incidents.
 
+
+---
+
+## Exporter les résultats de simulation CSV / PDF
+
+L’application permet d’exporter les résultats d’une simulation orbitale ou d’un transfert de Hohmann.
+
+Les exports sont générés à la demande depuis le détail d’une simulation et ne modifient pas les données en base.
+
+Deux formats sont disponibles :
+
+- `CSV` : destiné à l’analyse de données ou à l’exploitation externe ;
+- `PDF` : destiné au partage ou à l’archivage sous forme de rapport lisible.
+
+---
+
+### Objectif
+
+Permettre à un utilisateur autorisé d’exporter les paramètres et résultats d’une simulation enregistrée.
+
+L’export reflète les données persistées de la simulation sélectionnée.
+
+---
+
+### Types de simulations supportés
+
+| Type | Description |
+|---|---|
+| `ORBIT` | Simulation orbitale |
+| `HOHMANN` | Manœuvre de transfert de Hohmann |
+
+---
+
+### Endpoints API
+
+| Méthode | Endpoint | Format | Rôles autorisés |
+|---|---|---|---|
+| `GET` | `/api/simulations/{id}/export/csv` | CSV | ADMIN, OPERATEUR, LECTEUR |
+| `GET` | `/api/simulations/{id}/export/pdf` | PDF | ADMIN, OPERATEUR, LECTEUR |
+
+---
+
+### Export CSV
+
+Le fichier CSV utilise un format à colonnes fixes.
+
+Colonnes exportées :
+
+```text
+simulationId;missionId;missionName;satelliteId;satelliteName;type;status;createdAt;createdBy;inputMassKg;inputAltitudeKm;inputInclinationDeg;inputEccentricity;targetAltitudeKm;orbitalPeriodMinutes;averageVelocityKmS;orbitShape;deltaV1MS;deltaV2MS;deltaVTotalMS;transferTimeMinutes
+```
+
+Le séparateur utilisé est `;` afin d’assurer une ouverture correcte dans Excel en environnement français.
+
+Le fichier est encodé en UTF-8 avec BOM pour préserver les caractères accentués.
+
+---
+
+### Exemple CSV ORBIT
+
+```csv
+simulationId;missionId;missionName;satelliteId;satelliteName;type;status;createdAt;createdBy;inputMassKg;inputAltitudeKm;inputInclinationDeg;inputEccentricity;targetAltitudeKm;orbitalPeriodMinutes;averageVelocityKmS;orbitShape;deltaV1MS;deltaV2MS;deltaVTotalMS;transferTimeMinutes
+24;4;Mission to the MOOOOON;3;LunaSat-03;ORBIT;SUCCESS;2026-07-06T00:56:57.705593;admin@finalspace.com;850.0;500.0;95.0;0.4;;94.47;7.62;ELLIPTIQUE;;;;
+```
+
+---
+
+### Exemple CSV HOHMANN
+
+```csv
+simulationId;missionId;missionName;satelliteId;satelliteName;type;status;createdAt;createdBy;inputMassKg;inputAltitudeKm;inputInclinationDeg;inputEccentricity;targetAltitudeKm;orbitalPeriodMinutes;averageVelocityKmS;orbitShape;deltaV1MS;deltaV2MS;deltaVTotalMS;transferTimeMinutes
+25;4;Mission to the MOOOOON;3;LunaSat-03;HOHMANN;SUCCESS;2026-07-06T01:05:00;admin@finalspace.com;850.0;500.0;95.0;0.4;1200.0;;;;123.4;121.8;245.2;52.7
+```
+
+---
+
+### Export PDF
+
+Le PDF est généré avec OpenPDF `3.0.5`.
+
+Le rapport contient :
+
+- un titre ;
+- la date de génération ;
+- les métadonnées de la simulation ;
+- un tableau des paramètres d’entrée ;
+- un tableau des résultats calculés ;
+- un pied de page indiquant que le rapport est généré automatiquement.
+
+---
+
+### Contenu du PDF
+
+#### Métadonnées
+
+- identifiant de simulation ;
+- mission ;
+- satellite ;
+- type ;
+- statut ;
+- date de création ;
+- auteur.
+
+#### Paramètres
+
+- masse ;
+- altitude initiale ;
+- inclinaison ;
+- excentricité ;
+- altitude cible pour les simulations `HOHMANN`.
+
+#### Résultats ORBIT
+
+- période orbitale ;
+- vitesse moyenne ;
+- forme de l’orbite.
+
+#### Résultats HOHMANN
+
+- delta V1 ;
+- delta V2 ;
+- delta V total ;
+- durée du transfert.
+
+---
+
+### Frontend
+
+La page détail simulation affiche une section `Exports`.
+
+Elle propose deux boutons :
+
+- `Exporter CSV`
+- `Exporter PDF`
+
+Le téléchargement est déclenché directement depuis le navigateur.
+
+Les erreurs `403` et `404` sont gérées côté interface.
+
+---
+
+### Règles métier
+
+| Règle | Description |
+|---|---|
+| Export à la demande | L’export est lancé uniquement par action utilisateur |
+| Simulation ciblée | Chaque export correspond à une simulation précise |
+| Données persistées | L’export utilise les données enregistrées en base |
+| Aucune modification | L’export ne modifie pas la base de données |
+| Format CSV unique | Les simulations ORBIT et HOHMANN partagent les mêmes colonnes |
+| Format PDF standardisé | Un modèle PDF unique est utilisé |
+| Accès lecteur | Le rôle LECTEUR peut exporter une simulation |
+
+---
+
+### Tests réalisés
+
+Les tests backend vérifient :
+
+- export CSV non vide ;
+- export PDF non vide ;
+- fichier PDF valide ;
+- headers `Content-Type` ;
+- headers `Content-Disposition` ;
+- export CSV pour simulation `ORBIT` ;
+- export CSV pour simulation `HOHMANN` ;
+- export PDF pour simulation `ORBIT` ;
+- export PDF pour simulation `HOHMANN` ;
+- accès autorisé pour `LECTEUR`.
+
+Validation manuelle :
+
+- téléchargement CSV depuis le navigateur ;
+- téléchargement PDF depuis le navigateur ;
+- ouverture correcte du CSV dans Excel ;
+- ouverture correcte du PDF ;
+- test avec un compte LECTEUR.
+
+---
+
+### Hors périmètre
+
+L’US19 ne couvre pas :
+
+- personnalisation du modèle PDF ;
+- export multi-simulations ;
+- envoi automatique par email ;
+- archivage automatique des exports ;
+- génération planifiée des rapports.
+
 ---
 
 ## Dashboard mission

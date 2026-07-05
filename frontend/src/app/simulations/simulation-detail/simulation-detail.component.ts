@@ -25,6 +25,10 @@ export class SimulationDetailComponent implements OnInit {
   orbitPlotPoints: OrbitPlotPoint[] = [];
   hohmannPlotData: HohmannPlotData | null = null;
 
+  exportLoading = false;
+  exportErrorMessage = '';
+  exportSuccessMessage = '';
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -82,6 +86,64 @@ export class SimulationDetailComponent implements OnInit {
 
   goBack(): void {
     this.location.back();
+  }
+
+  exportSimulation(format: 'csv' | 'pdf'): void {
+    if (!this.simulation || this.exportLoading) {
+      return;
+    }
+
+    this.exportLoading = true;
+    this.exportErrorMessage = '';
+    this.exportSuccessMessage = '';
+
+    const simulationId = this.simulation.id;
+    const filename = `simulation-${simulationId}.${format}`;
+
+    const exportRequest = format === 'csv'
+      ? this.simulationService.exportCsv(simulationId)
+      : this.simulationService.exportPdf(simulationId);
+
+    exportRequest.subscribe({
+      next: (blob) => {
+        this.exportLoading = false;
+        this.downloadBlob(blob, filename);
+
+        this.exportSuccessMessage =
+          `Export ${format.toUpperCase()} généré avec succès.`;
+      },
+      error: (error) => {
+        this.exportLoading = false;
+
+        if (error.status === 403) {
+          this.router.navigate(['/forbidden']);
+          return;
+        }
+
+        if (error.status === 404) {
+          this.exportErrorMessage = 'Simulation introuvable.';
+          return;
+        }
+
+        this.exportErrorMessage =
+          `Impossible de générer l’export ${format.toUpperCase()}.`;
+      }
+    });
+  }
+
+  private downloadBlob(blob: Blob, filename: string): void {
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+
+    link.href = url;
+    link.download = filename;
+    link.style.display = 'none';
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    window.URL.revokeObjectURL(url);
   }
 
   getSimulationTypeLabel(): string {

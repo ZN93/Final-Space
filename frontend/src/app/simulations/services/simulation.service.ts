@@ -40,4 +40,22 @@ export class SimulationService {
       `${this.apiUrl}/simulations/${simulationId}`
     );
   }
+
+  exportCsv(simulationId: number): Observable<Blob> {
+    return this.http.get(
+      `${this.apiUrl}/simulations/${simulationId}/export/csv`,
+      {
+        responseType: 'blob'
+      }
+    );
+  }
+
+  exportPdf(simulationId: number): Observable<Blob> {
+    return this.http.get(
+      `${this.apiUrl}/simulations/${simulationId}/export/pdf`,
+      {
+        responseType: 'blob'
+      }
+    );
+  }
 }
