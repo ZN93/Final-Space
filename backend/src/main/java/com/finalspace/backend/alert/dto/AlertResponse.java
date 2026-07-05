@@ -4,6 +4,7 @@ import com.finalspace.backend.alert.AlertSeverity;
 import com.finalspace.backend.alert.AlertStatus;
 
 import java.time.LocalDateTime;
+import java.time.Instant;
 
 public record AlertResponse(
         Long id,
@@ -16,6 +17,9 @@ public record AlertResponse(
         AlertSeverity severity,
         AlertStatus status,
         String message,
+        String anomalyId,
+        Double telemetryValue,
+        Instant telemetryTimestamp,
         LocalDateTime createdAt,
         LocalDateTime ackAt,
         String ackBy

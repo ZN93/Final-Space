@@ -11,4 +11,6 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
     List<Alert> findByMissionIdAndStatusOrderByCreatedAtDesc(Long missionId, AlertStatus status);
 
     long countByMissionIdAndStatus(Long missionId, AlertStatus status);
+
+    boolean existsByAnomalyId(String anomalyId);
 }

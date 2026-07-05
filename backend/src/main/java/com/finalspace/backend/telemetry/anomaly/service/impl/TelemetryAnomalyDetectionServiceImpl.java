@@ -2,6 +2,7 @@ package com.finalspace.backend.telemetry.anomaly.service.impl;
 
 import com.finalspace.backend.common.exception.BusinessException;
 import com.finalspace.backend.common.exception.ResourceNotFoundException;
+import com.finalspace.backend.alert.service.AnomalyAlertGenerationService;
 import com.finalspace.backend.satellite.SatelliteRepository;
 import com.finalspace.backend.telemetry.TelemetryPoint;
 import com.finalspace.backend.telemetry.anomaly.TelemetryAnomaly;
@@ -27,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -49,6 +51,8 @@ public class TelemetryAnomalyDetectionServiceImpl implements TelemetryAnomalyDet
     private final SatelliteRepository satelliteRepository;
     private final MongoTemplate mongoTemplate;
     private final TelemetryAnomalyRepository telemetryAnomalyRepository;
+
+    private final AnomalyAlertGenerationService anomalyAlertGenerationService;
 
     @Override
     public TelemetryAnomalyDetectionResponse detectAnomalies(
@@ -76,6 +80,11 @@ public class TelemetryAnomalyDetectionServiceImpl implements TelemetryAnomalyDet
         }
 
         List<TelemetryAnomaly> savedAnomalies = saveWithoutDuplicates(detectedAnomalies);
+
+        List<TelemetryAnomaly> persistedDetectedAnomalies =
+                findPersistedDetectedAnomalies(detectedAnomalies);
+
+        anomalyAlertGenerationService.generateAlertsFromAnomalies(persistedDetectedAnomalies);
 
         return new TelemetryAnomalyDetectionResponse(
                 satelliteId,
@@ -422,5 +431,21 @@ public class TelemetryAnomalyDetectionServiceImpl implements TelemetryAnomalyDet
             Double criticalMax,
             Double criticalMin
     ) {
+    }
+
+    private List<TelemetryAnomaly> findPersistedDetectedAnomalies(
+            List<TelemetryAnomaly> detectedAnomalies
+    ) {
+        return detectedAnomalies.stream()
+                .map(anomaly -> telemetryAnomalyRepository
+                        .findBySatelliteIdAndMetricAndTimestampAndTypeAndRuleName(
+                                anomaly.getSatelliteId(),
+                                anomaly.getMetric(),
+                                anomaly.getTimestamp(),
+                                anomaly.getType(),
+                                anomaly.getRuleName()
+                        ))
+                .flatMap(Optional::stream)
+                .toList();
     }
 }
