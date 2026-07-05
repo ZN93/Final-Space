@@ -1,5 +1,6 @@
 package com.finalspace.backend.security;
 
+import com.finalspace.backend.alert.AlertRepository;
 import com.finalspace.backend.mission.Mission;
 import com.finalspace.backend.mission.MissionRepository;
 import com.finalspace.backend.mission.MissionStatus;
@@ -45,10 +46,14 @@ class TelemetryQueryAuthorizationIntegrationTest {
     @Autowired
     private TelemetryPointRepository telemetryPointRepository;
 
+    @Autowired
+    private AlertRepository alertRepository;
+
     private final JsonMapper jsonMapper = new JsonMapper();
 
     @BeforeEach
     void cleanDatabase() {
+        alertRepository.deleteAll();
         telemetryPointRepository.deleteAll();
         satelliteRepository.deleteAll();
         missionRepository.deleteAll();

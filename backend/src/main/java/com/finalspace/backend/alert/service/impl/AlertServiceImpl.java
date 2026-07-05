@@ -59,6 +59,9 @@ public class AlertServiceImpl implements AlertService {
                 alert.getSeverity(),
                 alert.getStatus(),
                 alert.getMessage(),
+                alert.getAnomalyId(),
+                alert.getTelemetryValue(),
+                alert.getTelemetryTimestamp(),
                 alert.getCreatedAt(),
                 alert.getAckAt(),
                 alert.getAckBy()

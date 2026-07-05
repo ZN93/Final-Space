@@ -9,6 +9,7 @@ import jakarta.validation.constraints.Size;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(
@@ -16,7 +17,8 @@ import java.time.LocalDateTime;
         indexes = {
                 @Index(name = "idx_alert_mission", columnList = "mission_id"),
                 @Index(name = "idx_alert_status", columnList = "status"),
-                @Index(name = "idx_alert_created_at", columnList = "created_at")
+                @Index(name = "idx_alert_created_at", columnList = "created_at"),
+                @Index(name = "idx_alert_anomaly_id", columnList = "anomaly_id", unique = true)
         }
 )
 @Getter
@@ -72,4 +74,14 @@ public class Alert {
     @Size(max = 150, message = "L'utilisateur d'acquittement ne doit pas dépasser 150 caractères")
     @Column(length = 150)
     private String ackBy;
+
+    @Size(max = 100, message = "L'identifiant d'anomalie ne doit pas dépasser 100 caractères")
+    @Column(name = "anomaly_id", length = 100, unique = true)
+    private String anomalyId;
+
+    @Column(name = "telemetry_value")
+    private Double telemetryValue;
+
+    @Column(name = "telemetry_timestamp")
+    private Instant telemetryTimestamp;
 }
