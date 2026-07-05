@@ -2044,6 +2044,244 @@ L’US17 ne couvre pas :
 * ajouter des statistiques par métrique ;
 * ajouter des exports CSV/PDF des anomalies.
 
+
+---
+
+## Génération automatique d’alertes à partir des anomalies
+
+L’application génère automatiquement des alertes mission à partir des anomalies de télémétrie détectées.
+
+Cette fonctionnalité permet de transformer une anomalie technique détectée sur les données de télémétrie en alerte opérationnelle visible dans le module Mission Control.
+
+Les anomalies sont stockées dans MongoDB, tandis que les alertes sont stockées en base SQL afin de rester intégrées au module existant de gestion des alertes.
+
+---
+
+### Objectif
+
+Lorsqu’une anomalie est détectée, le système crée automatiquement une alerte associée à la mission et au satellite concernés.
+
+L’alerte permet d’informer les utilisateurs qu’une situation nécessite une attention particulière.
+
+Les alertes générées sont consultables depuis la liste des alertes d’une mission.
+
+---
+
+### Principe de fonctionnement
+
+Flux de traitement :
+
+```text
+Import CSV télémétrie
+        ↓
+Détection d’anomalies
+        ↓
+Persistance des anomalies dans MongoDB
+        ↓
+Génération automatique d’alertes SQL
+        ↓
+Affichage dans les alertes de mission
+```
+
+---
+
+### Données stockées dans une alerte
+
+Une alerte générée depuis une anomalie contient :
+
+- mission associée ;
+- satellite concerné ;
+- métrique impactée ;
+- type d’alerte ;
+- gravité ;
+- statut ;
+- message ;
+- identifiant de l’anomalie d’origine ;
+- valeur de télémétrie détectée ;
+- timestamp de télémétrie ;
+- date de création.
+
+---
+
+### Champs ajoutés à l’entité Alert
+
+Les champs suivants ont été ajoutés à l’entité `Alert` :
+
+| Champ | Description |
+|---|---|
+| `anomalyId` | Identifiant MongoDB de l’anomalie d’origine |
+| `telemetryValue` | Valeur de télémétrie ayant déclenché l’anomalie |
+| `telemetryTimestamp` | Date du point de télémétrie concerné |
+
+Un index unique est appliqué sur `anomaly_id` afin d’éviter la création de doublons.
+
+---
+
+### Types d’alertes générées
+
+Les types d’alertes sont dérivés du type d’anomalie.
+
+| Anomalie | Type d’alerte |
+|---|---|
+| `THRESHOLD` | `ANOMALY_THRESHOLD` |
+| `VARIATION` | `ANOMALY_VARIATION` |
+| `MISSING` | `ANOMALY_MISSING` |
+
+---
+
+### Statut des alertes
+
+Une alerte générée automatiquement est créée avec le statut :
+
+```text
+ACTIVE
+```
+
+Elle peut ensuite être acquittée via le mécanisme existant d’acquittement des alertes.
+
+---
+
+### Règles métier
+
+| Règle | Description |
+|---|---|
+| Création automatique | Une alerte est créée après détection d’une anomalie |
+| Une anomalie, une alerte | Une anomalie génère au maximum une alerte |
+| Statut par défaut | Une alerte générée est créée avec le statut `ACTIVE` |
+| Pas de suppression automatique | Les alertes ne sont pas supprimées automatiquement |
+| Déduplication | Une alerte ne peut pas être créée deux fois pour la même anomalie |
+| Consultation | Les alertes sont visibles depuis la liste des alertes mission |
+| Acquittement | Les alertes peuvent être acquittées via le mécanisme existant |
+
+---
+
+### Endpoint utilisé
+
+Les alertes générées sont consultables via l’endpoint existant :
+
+```http
+GET /api/missions/{missionId}/alerts
+```
+
+Avec filtre optionnel :
+
+```http
+GET /api/missions/{missionId}/alerts?status=ACTIVE
+```
+
+---
+
+### Exemple de réponse
+
+```json
+{
+  "id": 1,
+  "missionId": 4,
+  "missionName": "Mission Luna",
+  "satelliteId": 3,
+  "satelliteName": "LunaSat-03",
+  "metric": "speed",
+  "type": "ANOMALY_THRESHOLD",
+  "severity": "ELEVEE",
+  "status": "ACTIVE",
+  "message": "Anomalie THRESHOLD détectée sur la métrique speed avec la valeur 8050.0.",
+  "anomalyId": "65f...",
+  "telemetryValue": 8050.0,
+  "telemetryTimestamp": "2026-01-01T10:10:00Z",
+  "createdAt": "2026-07-05T22:54:00",
+  "ackAt": null,
+  "ackBy": null
+}
+```
+
+---
+
+### Correction importante
+
+La génération d’alertes ne repose pas uniquement sur les nouvelles anomalies créées.
+
+Le système récupère les anomalies détectées déjà persistées afin de créer les alertes même lorsque les anomalies existaient déjà en MongoDB mais qu’aucune alerte SQL n’avait encore été créée.
+
+Cela corrige le cas suivant :
+
+```text
+Anomalies déjà existantes
+        ↓
+Redétection
+        ↓
+savedCount = 0
+        ↓
+Aucune alerte créée
+```
+
+Après correction :
+
+```text
+Anomalies déjà existantes
+        ↓
+Redétection
+        ↓
+savedCount = 0
+        ↓
+Alertes créées si absentes
+```
+
+---
+
+### Tests réalisés
+
+Les tests backend vérifient :
+
+- la création d’alertes après détection d’anomalies ;
+- la liaison alerte / mission ;
+- la liaison alerte / satellite ;
+- la cohérence des champs `metric`, `type`, `severity`, `value`, `timestamp` ;
+- le statut `ACTIVE` par défaut ;
+- l’absence de doublons lors d’une redétection ;
+- la consultation des alertes via l’endpoint mission.
+
+Résultat :
+
+```text
+200 tests PASS
+BUILD SUCCESS
+```
+
+---
+
+### Validation manuelle
+
+Validation réalisée avec Postman :
+
+```http
+GET /api/missions/4/alerts?status=ACTIVE
+```
+
+Résultat : les alertes générées depuis les anomalies sont bien retournées.
+
+Validation réalisée dans le navigateur :
+
+- page alertes mission accessible ;
+- alertes visibles ;
+- types `ANOMALY_THRESHOLD`, `ANOMALY_VARIATION`, `ANOMALY_MISSING` affichés ;
+- gravités affichées ;
+- statut `ACTIVE` affiché ;
+- bouton d’acquittement disponible.
+
+---
+
+### Hors périmètre
+
+L’US18 ne couvre pas :
+
+- notification email ;
+- notification SMS ;
+- notification push ;
+- escalade automatique ;
+- fusion d’alertes similaires ;
+- corrélation avancée ;
+- création automatique d’incidents.
+
 ---
 
 ## Dashboard mission
