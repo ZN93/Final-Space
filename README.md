@@ -2360,7 +2360,7 @@ simulationId;missionId;missionName;satelliteId;satelliteName;type;status;created
 
 ### Export PDF
 
-Le PDF est généré avec OpenPDF `3.0.5`.
+Le PDF est généré avec OpenPDF `2.0.4`.
 
 Le rapport contient :
 
@@ -2471,6 +2471,161 @@ L’US19 ne couvre pas :
 - envoi automatique par email ;
 - archivage automatique des exports ;
 - génération planifiée des rapports.
+
+---
+
+## US20 - Générer un rapport de mission PDF
+
+L’application permet de générer un rapport PDF complet pour une mission existante.
+
+Le rapport est généré à la demande par l’utilisateur et ne modifie pas les données en base. Il fournit une synthèse exploitable de l’état courant de la mission, destinée à l’analyse, au partage ou à l’archivage.
+
+---
+
+### Objectif
+
+Permettre à un utilisateur autorisé de produire un rapport de mission regroupant les informations essentielles d’une mission et de ses activités associées.
+
+Le rapport couvre :
+
+- les informations générales de la mission ;
+- les satellites associés ;
+- les simulations réalisées ;
+- les alertes générées ;
+- les incidents ouverts, en cours ou clôturés ;
+- une conclusion automatique basée sur l’état courant de la mission.
+
+---
+
+### Endpoint API
+
+| Méthode | Endpoint | Format | Rôles autorisés |
+|---|---|---|---|
+| `GET` | `/api/missions/{missionId}/report/pdf` | PDF | ADMIN, OPERATEUR, LECTEUR |
+
+---
+
+### Nom du fichier généré
+
+Le fichier téléchargé utilise le format suivant :
+
+```text
+mission-report-<id>.pdf
+```
+
+Exemple :
+
+```text
+mission-report-4.pdf
+```
+
+---
+
+### Contenu du rapport PDF
+
+Le rapport contient les sections suivantes :
+
+| Section | Contenu |
+|---|---|
+| Métadonnées du rapport | Date de génération, auteur, identifiant mission |
+| Informations mission | Nom, description, statut, date de création, date de clôture |
+| KPI globaux | Nombre de satellites, simulations, alertes et incidents |
+| Satellites associés | Liste des satellites avec statut et paramètres orbitaux |
+| Synthèse simulations | Nombre total, nombre ORBIT, nombre HOHMANN |
+| Dernières simulations | Dernières simulations enregistrées avec résultat principal |
+| Synthèse alertes | Nombre total, actives, acquittées, répartition par gravité |
+| Dernières alertes | Type, gravité, statut, satellite, métrique, message |
+| Synthèse incidents | Nombre total, ouverts, en cours, clôturés, répartition par gravité |
+| Derniers incidents | Titre, gravité, statut, satellite, dates |
+| Conclusion automatique | Résumé de l’état courant de la mission |
+
+---
+
+### Règles métier
+
+| Règle | Description |
+|---|---|
+| Génération à la demande | Le rapport est généré uniquement suite à une action utilisateur |
+| Données courantes | Le rapport reflète l’état des données au moment de la génération |
+| Aucune modification | La génération ne modifie pas les données en base |
+| Modèle unique | Le rapport utilise un format PDF standardisé |
+| Mission ciblée | Chaque rapport concerne une seule mission |
+| Accès lecteur | Le rôle LECTEUR peut générer un rapport |
+
+---
+
+### Frontend
+
+La page détail mission propose un bouton :
+
+```text
+Générer rapport PDF
+```
+
+Le clic déclenche le téléchargement du rapport PDF depuis le navigateur.
+
+Les erreurs sont gérées côté interface :
+
+- `403` : redirection vers la page forbidden ;
+- `404` : affichage du message `Mission introuvable` ;
+- autre erreur : affichage d’un message d’échec de génération.
+
+---
+
+### Sécurité
+
+Les rôles autorisés à générer un rapport sont :
+
+- ADMIN ;
+- OPERATEUR ;
+- LECTEUR.
+
+Un utilisateur non authentifié ou non autorisé ne peut pas générer le rapport.
+
+---
+
+### Tests réalisés
+
+Les tests backend vérifient :
+
+- génération du rapport PDF par un ADMIN ;
+- génération du rapport PDF par un LECTEUR ;
+- refus d’un utilisateur non connecté ;
+- erreur 404 si la mission n’existe pas ;
+- `Content-Type: application/pdf` ;
+- `Content-Disposition` avec le nom `mission-report-<id>.pdf` ;
+- PDF non vide ;
+- signature PDF commençant par `%PDF`.
+
+Validation manuelle réalisée :
+
+- génération depuis Postman ;
+- téléchargement depuis le navigateur ;
+- ouverture correcte du PDF ;
+- cohérence du rapport avec les données mission ;
+- validation du bouton depuis la page détail mission.
+
+---
+
+### Hors périmètre
+
+L’US20 ne couvre pas :
+
+- personnalisation avancée du modèle PDF ;
+- génération automatique périodique ;
+- export Word ;
+- export multi-formats ;
+- envoi automatique par email ;
+- archivage automatique du rapport ;
+- signature numérique du PDF.
+
+---
+
+### Conclusion
+
+L’US20 est validée.
+
+Un utilisateur autorisé peut générer un rapport PDF complet depuis une mission existante. Le rapport contient les informations générales de la mission, ses satellites, les simulations, les alertes, les incidents et une synthèse automatique de l’état courant.
 
 ---
 
