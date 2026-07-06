@@ -445,3 +445,7 @@ textarea:focus {
 .satellite-link:hover {
   text-decoration: underline;
 }
+
+.report-feedback {
+  margin-top: 16px;
+}

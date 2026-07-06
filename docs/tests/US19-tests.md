@@ -63,7 +63,7 @@ L’encodage est UTF-8 avec BOM afin de garantir une ouverture correcte dans Exc
 
 ## Export PDF
 
-Le PDF est généré avec OpenPDF `3.0.5`.
+Le PDF est généré avec OpenPDF `2.0.4`.
 
 Le rapport contient :
 

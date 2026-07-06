@@ -90,6 +90,17 @@
         >
           Voir incidents
         </a>
+
+        <button
+          *ngIf="mission"
+          type="button"
+          class="secondary-button"
+          [disabled]="reportLoading"
+          (click)="generateMissionReportPdf()"
+        >
+          {{ reportLoading ? 'Génération...' : 'Générer rapport PDF' }}
+        </button>
+
         <button
           *ngIf="canEdit()"
           type="submit"
@@ -109,6 +120,15 @@
           {{ closing ? 'Clôture...' : 'Clôturer la mission' }}
         </button>
       </div>
+
+      <div *ngIf="reportSuccessMessage" class="success-card report-feedback">
+        {{ reportSuccessMessage }}
+      </div>
+
+      <div *ngIf="reportErrorMessage" class="error-card report-feedback">
+        {{ reportErrorMessage }}
+      </div>
+
     </form>
     <section class="satellites-section">
       <div class="satellites-header">

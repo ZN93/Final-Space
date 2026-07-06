@@ -35,4 +35,13 @@ export class MissionService {
   close(id: number): Observable<Mission> {
     return this.http.post<Mission>(`${this.apiUrl}/${id}/close`, {});
   }
+
+  exportReportPdf(id: number): Observable<Blob> {
+    return this.http.get(
+      `${this.apiUrl}/${id}/report/pdf`,
+      {
+        responseType: 'blob'
+      }
+    );
+  }
 }

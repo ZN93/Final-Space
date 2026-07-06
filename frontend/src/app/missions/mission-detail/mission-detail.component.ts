@@ -29,6 +29,10 @@ export class MissionDetailComponent implements OnInit {
   errorMessage = '';
   successMessage = '';
 
+  reportLoading = false;
+  reportErrorMessage = '';
+  reportSuccessMessage = '';
+
   satellites: Satellite[] = [];
   satellitesLoading = false;
   satellitesErrorMessage = '';
@@ -403,5 +407,55 @@ export class MissionDetailComponent implements OnInit {
     return this.canManage() && !this.isSatelliteInactive(satellite);
   }
 
+  generateMissionReportPdf(): void {
+    if (!this.mission || this.reportLoading) {
+      return;
+    }
+
+    this.reportLoading = true;
+    this.reportErrorMessage = '';
+    this.reportSuccessMessage = '';
+
+    const missionId = this.mission.id;
+    const filename = `mission-report-${missionId}.pdf`;
+
+    this.missionService.exportReportPdf(missionId).subscribe({
+      next: (blob) => {
+        this.reportLoading = false;
+        this.downloadBlob(blob, filename);
+        this.reportSuccessMessage = 'Rapport de mission PDF généré avec succès.';
+      },
+      error: (error) => {
+        this.reportLoading = false;
+
+        if (error.status === 403) {
+          this.router.navigate(['/forbidden']);
+          return;
+        }
+
+        if (error.status === 404) {
+          this.reportErrorMessage = 'Mission introuvable.';
+          return;
+        }
+
+        this.reportErrorMessage = 'Impossible de générer le rapport de mission.';
+      }
+    });
+  }
+
+  private downloadBlob(blob: Blob, filename: string): void {
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+
+    link.href = url;
+    link.download = filename;
+    link.style.display = 'none';
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    window.URL.revokeObjectURL(url);
+  }
 
 }
