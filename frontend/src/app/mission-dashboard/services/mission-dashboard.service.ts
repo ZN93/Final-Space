@@ -8,7 +8,7 @@ import { MissionDashboard } from '../models/mission-dashboard.model';
 })
 export class MissionDashboardService {
 
-  private readonly apiUrl = 'http://localhost:8080/api/missions';
+  private readonly apiUrl = '/api/missions';
 
   constructor(private http: HttpClient) {}
 

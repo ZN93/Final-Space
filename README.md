@@ -2621,7 +2621,7 @@ L’US20 ne couvre pas :
 
 ---
 
-## US21 - Exporter un rapport de télémétrie CSV/PDF
+## Exporter un rapport de télémétrie CSV/PDF
 
 L’application permet d’exporter un rapport de télémétrie pour un satellite existant.
 
@@ -2844,6 +2844,478 @@ L’US21 ne couvre pas :
 - envoi automatique par email ;
 - archivage automatique du rapport ;
 - signature numérique du PDF.
+
+---
+
+## US22 - Dockeriser l’application
+
+L’application Final Space peut être lancée dans un environnement Docker complet et reproductible.
+
+La dockerisation couvre :
+
+- le front-end Angular ;
+- le back-end Spring Boot ;
+- PostgreSQL pour les données métier ;
+- MongoDB pour les données de télémétrie et les anomalies.
+
+L’orchestration est réalisée avec Docker Compose.
+
+---
+
+### Objectif
+
+Permettre à un développeur de lancer toute l’application avec une seule commande :
+
+```bash
+docker compose up --build
+```
+
+Cette dockerisation simplifie l’installation locale, garantit un environnement cohérent et prépare le projet à un futur déploiement.
+
+---
+
+### Architecture Docker
+
+```text
+Navigateur
+   |
+   | http://localhost
+   v
+Frontend Angular / Nginx
+   |
+   | /api/* et /auth/*
+   v
+Backend Spring Boot
+   |
+   | JDBC
+   v
+PostgreSQL
+
+Backend Spring Boot
+   |
+   | MongoDB URI
+   v
+MongoDB
+```
+
+---
+
+### Services Docker
+
+| Service | Image / Build | Rôle | Port local |
+|---|---|---|---|
+| `frontend` | Build local Angular + Nginx | Interface web | `80` |
+| `backend` | Build local Spring Boot | API REST | `8080` |
+| `postgres` | `postgres:17` | Base relationnelle métier | `5432` |
+| `mongodb` | `mongo:7` | Télémétrie et anomalies | `27017` |
+
+---
+
+### Fichiers ajoutés ou modifiés
+
+| Fichier | Description |
+|---|---|
+| `docker-compose.yml` | Orchestration complète front, back et bases |
+| `.env.example` | Exemple de variables d’environnement |
+| `backend/Dockerfile` | Image Docker multi-stage du backend |
+| `backend/.dockerignore` | Exclusions du contexte Docker backend |
+| `frontend/Dockerfile` | Image Docker multi-stage du frontend |
+| `frontend/nginx.conf` | Configuration Nginx et proxy API |
+| `frontend/.dockerignore` | Exclusions du contexte Docker frontend |
+| `frontend/proxy.conf.json` | Proxy de développement local Angular |
+| `backend/src/main/resources/application.properties` | Configuration externalisée par variables d’environnement |
+| `SecurityConfig.java` | CORS configurable via variable d’environnement |
+
+---
+
+### Prérequis
+
+Avant de lancer l’application avec Docker, installer :
+
+- Docker ;
+- Docker Compose ;
+- Git.
+
+Vérification :
+
+```bash
+docker --version
+docker compose version
+```
+
+---
+
+### Variables d’environnement
+
+Un fichier `.env.example` est fourni à la racine du projet.
+
+Pour créer le fichier local :
+
+```bash
+cp .env.example .env
+```
+
+Sous PowerShell :
+
+```powershell
+copy .env.example .env
+```
+
+Le fichier `.env` ne doit pas être versionné.
+
+---
+
+### Variables principales
+
+| Variable | Description |
+|---|---|
+| `POSTGRES_DB` | Nom de la base PostgreSQL |
+| `POSTGRES_USER` | Utilisateur PostgreSQL |
+| `POSTGRES_PASSWORD` | Mot de passe PostgreSQL |
+| `MONGO_INITDB_ROOT_USERNAME` | Utilisateur MongoDB |
+| `MONGO_INITDB_ROOT_PASSWORD` | Mot de passe MongoDB |
+| `MONGO_DATABASE` | Base MongoDB utilisée |
+| `BACKEND_PORT` | Port local du backend |
+| `FRONTEND_PORT` | Port local du frontend |
+| `JWT_SECRET` | Secret de signature JWT |
+| `JWT_EXPIRATION` | Durée de validité du JWT |
+| `CORS_ALLOWED_ORIGINS` | Origines autorisées pour le CORS |
+| `SPRING_JPA_HIBERNATE_DDL_AUTO` | Stratégie Hibernate |
+| `SPRING_JPA_SHOW_SQL` | Activation ou non des logs SQL |
+
+---
+
+### Lancement complet
+
+Depuis la racine du projet :
+
+```bash
+docker compose up --build
+```
+
+L’application est ensuite disponible sur :
+
+| Composant | URL |
+|---|---|
+| Frontend | `http://localhost` |
+| Backend API | `http://localhost:8080` |
+| PostgreSQL | `localhost:5432` |
+| MongoDB | `localhost:27017` |
+
+---
+
+### Lancement en arrière-plan
+
+```bash
+docker compose up --build -d
+```
+
+---
+
+### Vérifier les conteneurs
+
+```bash
+docker compose ps
+```
+
+Résultat attendu :
+
+```text
+finalspace-frontend   running
+finalspace-backend    running
+finalspace-postgres   healthy
+finalspace-mongodb    healthy
+```
+
+---
+
+### Consulter les logs
+
+Tous les services :
+
+```bash
+docker compose logs
+```
+
+Backend :
+
+```bash
+docker compose logs backend
+```
+
+Frontend :
+
+```bash
+docker compose logs frontend
+```
+
+PostgreSQL :
+
+```bash
+docker compose logs postgres
+```
+
+MongoDB :
+
+```bash
+docker compose logs mongodb
+```
+
+---
+
+### Arrêt de l’application
+
+Arrêt sans suppression des données :
+
+```bash
+docker compose down
+```
+
+Arrêt avec suppression complète des volumes :
+
+```bash
+docker compose down -v
+```
+
+La commande `docker compose down -v` supprime les données persistées. Elle doit être utilisée uniquement pour réinitialiser complètement l’environnement.
+
+---
+
+### Persistance des données
+
+Les données sont persistées dans des volumes Docker :
+
+| Volume | Service | Contenu |
+|---|---|---|
+| `postgres_data` | PostgreSQL | Missions, satellites, incidents, alertes, simulations, utilisateurs |
+| `mongodb_data` | MongoDB | Points de télémétrie et anomalies |
+
+Un arrêt simple avec :
+
+```bash
+docker compose down
+```
+
+ne supprime pas les données.
+
+Après relance avec :
+
+```bash
+docker compose up
+```
+
+les données créées précédemment restent disponibles.
+
+---
+
+### Backend Docker
+
+Le backend utilise une image multi-stage :
+
+1. étape Maven pour compiler le projet ;
+2. étape runtime Java 17 pour exécuter le JAR.
+
+Le conteneur expose le port :
+
+```text
+8080
+```
+
+Le backend utilise les variables d’environnement pour se connecter à PostgreSQL et MongoDB.
+
+Exemple de configuration Docker :
+
+```text
+SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/finalspace
+SPRING_DATA_MONGODB_URI=mongodb://finalspace:finalspace@mongodb:27017/finalspace?authSource=admin
+```
+
+---
+
+### Frontend Docker
+
+Le frontend utilise une image multi-stage :
+
+1. étape Node.js pour construire l’application Angular ;
+2. étape Nginx pour servir les fichiers statiques.
+
+Le conteneur expose le port :
+
+```text
+80
+```
+
+Nginx sert l’application Angular et redirige les appels API vers le backend.
+
+Routes proxy :
+
+| Route frontend | Destination Docker |
+|---|---|
+| `/api/*` | `http://backend:8080/api/*` |
+| `/auth/*` | `http://backend:8080/auth/*` |
+
+---
+
+### Configuration des appels API
+
+Les appels API du frontend utilisent des URLs relatives :
+
+```text
+/api
+/auth
+```
+
+Cela permet :
+
+- le fonctionnement local via proxy Angular ;
+- le fonctionnement Docker via Nginx ;
+- une meilleure compatibilité avec un futur déploiement.
+
+---
+
+### Développement local sans Docker
+
+Le projet peut toujours être lancé hors Docker.
+
+Backend :
+
+```bash
+cd backend
+./mvnw spring-boot:run
+```
+
+Frontend :
+
+```bash
+cd frontend
+npm start
+```
+
+Le fichier `frontend/proxy.conf.json` permet de rediriger les appels `/api` et `/auth` vers le backend local.
+
+---
+
+### Tests de validation
+
+Backend :
+
+```bash
+cd backend
+./mvnw test
+```
+
+Frontend :
+
+```bash
+cd frontend
+npm run build
+```
+
+Docker :
+
+```bash
+docker compose up --build
+```
+
+---
+
+### Smoke tests réalisés
+
+Les vérifications suivantes ont été réalisées :
+
+| Test | Résultat |
+|---|---|
+| Build backend | PASS |
+| Tests JUnit backend | PASS |
+| Build frontend Angular | PASS |
+| Build images Docker | PASS |
+| Démarrage PostgreSQL | PASS |
+| Démarrage MongoDB | PASS |
+| Démarrage backend | PASS |
+| Démarrage frontend | PASS |
+| Accès navigateur au frontend | PASS |
+| Login depuis le frontend Docker | PASS |
+| Appels API via Nginx | PASS |
+| Accès aux missions | PASS |
+| Accès aux satellites | PASS |
+| Accès à la télémétrie | PASS |
+| Persistance après redémarrage | PASS |
+
+---
+
+### Sécurité et configuration
+
+Les secrets ne sont pas codés en dur dans les fichiers Docker.
+
+Les valeurs sensibles sont externalisées via :
+
+```text
+.env
+```
+
+Le fichier `.env` est ignoré par Git.
+
+Le fichier `.env.example` fournit uniquement des valeurs de développement.
+
+Le CORS est configurable via :
+
+```text
+CORS_ALLOWED_ORIGINS
+```
+
+---
+
+### Limites
+
+Cette US ne couvre pas :
+
+- le déploiement sur un cloud spécifique ;
+- Kubernetes ;
+- la haute disponibilité ;
+- la scalabilité automatique ;
+- la gestion avancée des secrets ;
+- un registre d’images Docker distant ;
+- une pipeline CD complète de déploiement.
+
+---
+
+### Commandes utiles
+
+Rebuild complet :
+
+```bash
+docker compose up --build
+```
+
+Lancement en arrière-plan :
+
+```bash
+docker compose up -d
+```
+
+Arrêt :
+
+```bash
+docker compose down
+```
+
+Arrêt avec suppression des données :
+
+```bash
+docker compose down -v
+```
+
+Voir les conteneurs :
+
+```bash
+docker compose ps
+```
+
+Voir les logs :
+
+```bash
+docker compose logs -f
+```
 
 ---
 

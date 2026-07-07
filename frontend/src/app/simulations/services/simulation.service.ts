@@ -8,7 +8,7 @@ import { SimulationResponse, SimulationListItemResponse } from '../models/simula
 })
 export class SimulationService {
 
-  private readonly apiUrl = 'http://localhost:8080/api';
+  private readonly apiUrl = '/api';
 
   constructor(private http: HttpClient) {}
 

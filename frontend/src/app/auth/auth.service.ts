@@ -27,11 +27,11 @@ export class AuthService {
 
   private readonly tokenKey = 'finalspace_token';
 
-  private readonly apiUrl = 'http://localhost:8080';
+  private readonly apiUrl = '';
 
   login(credentials: LoginRequest): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(
-        `${this.apiUrl}/auth/login`,
+        `/auth/login`,
         credentials
     ).pipe(
         tap((response) => {
