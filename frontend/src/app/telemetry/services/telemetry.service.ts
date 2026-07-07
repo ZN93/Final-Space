@@ -118,4 +118,62 @@ export class TelemetryService {
       { params }
     );
   }
+
+  exportTelemetryReportCsv(
+    satelliteId: number,
+    metrics: string[],
+    from?: string | null,
+    to?: string | null
+  ): Observable<Blob> {
+    let params = new HttpParams();
+
+    metrics.forEach((metric) => {
+      params = params.append('metric', metric);
+    });
+
+    if (from) {
+      params = params.set('from', from);
+    }
+
+    if (to) {
+      params = params.set('to', to);
+    }
+
+    return this.http.get(
+      `${this.apiUrl}/satellites/${satelliteId}/telemetry/report/csv`,
+      {
+        params,
+        responseType: 'blob'
+      }
+    );
+  }
+
+  exportTelemetryReportPdf(
+    satelliteId: number,
+    metrics: string[],
+    from?: string | null,
+    to?: string | null
+  ): Observable<Blob> {
+    let params = new HttpParams();
+
+    metrics.forEach((metric) => {
+      params = params.append('metric', metric);
+    });
+
+    if (from) {
+      params = params.set('from', from);
+    }
+
+    if (to) {
+      params = params.set('to', to);
+    }
+
+    return this.http.get(
+      `${this.apiUrl}/satellites/${satelliteId}/telemetry/report/pdf`,
+      {
+        params,
+        responseType: 'blob'
+      }
+    );
+  }
 }

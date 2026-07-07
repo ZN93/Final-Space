@@ -868,3 +868,25 @@ input:focus {
     flex-direction: column;
   }
 }
+
+.telemetry-report-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.telemetry-report-feedback {
+  margin-top: 16px;
+}
+
+@media (max-width: 768px) {
+  .telemetry-report-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .telemetry-report-actions button {
+    width: 100%;
+  }
+}
