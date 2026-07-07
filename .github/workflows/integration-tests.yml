@@ -1,0 +1,90 @@
+name: TI - Docker Compose Integration Tests
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  docker-integration-tests:
+    name: Docker Compose integration tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create .env file
+        run: cp .env.example .env
+
+      - name: Validate Docker Compose configuration
+        run: docker compose config
+
+      - name: Build Docker images
+        run: docker compose build
+
+      - name: Start full application stack
+        run: docker compose up -d
+
+      - name: Show containers status
+        run: docker compose ps
+
+      - name: Wait for backend healthcheck
+        run: |
+          for i in {1..60}; do
+            if curl -fsS http://localhost:8080/actuator/health; then
+              echo "Backend is ready"
+              exit 0
+            fi
+
+            echo "Waiting for backend..."
+            sleep 5
+          done
+
+          echo "Backend did not become ready in time"
+          docker compose logs backend
+          exit 1
+
+      - name: Check frontend availability
+        run: |
+          curl -fsS http://localhost > /tmp/frontend.html
+          test -s /tmp/frontend.html
+
+      - name: Check frontend reverse proxy to backend
+        run: |
+          curl -i http://localhost/api/missions > /tmp/api-response.txt
+
+          if grep -E "HTTP/1.1 401|HTTP/1.1 403|HTTP/2 401|HTTP/2 403" /tmp/api-response.txt; then
+            echo "API proxy is reachable and protected"
+            exit 0
+          fi
+
+          echo "Unexpected API proxy response"
+          cat /tmp/api-response.txt
+          exit 1
+
+      - name: Check PostgreSQL container health
+        run: |
+          docker inspect finalspace-postgres --format='{{json .State.Health.Status}}' | grep healthy
+
+      - name: Check MongoDB container health
+        run: |
+          docker inspect finalspace-mongodb --format='{{json .State.Health.Status}}' | grep healthy
+
+      - name: Stop stack
+        if: always()
+        run: docker compose down
+
+      - name: Show logs on failure
+        if: failure()
+        run: |
+          docker compose logs backend
+          docker compose logs frontend
+          docker compose logs postgres
+          docker compose logs mongodb
