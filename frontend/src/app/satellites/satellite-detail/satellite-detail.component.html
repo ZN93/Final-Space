@@ -611,14 +611,34 @@
           </p>
         </div>
 
-        <button
-          type="button"
-          class="secondary-button"
-          (click)="refreshTelemetryChart()"
-          [disabled]="telemetryLoading || availableTelemetryMetrics.length === 0"
-        >
-          {{ telemetryLoading ? 'Chargement...' : 'Rafraîchir' }}
-        </button>
+        <div class="telemetry-report-actions">
+          <button
+            type="button"
+            class="secondary-button"
+            (click)="refreshTelemetryChart()"
+            [disabled]="telemetryLoading || availableTelemetryMetrics.length === 0"
+          >
+            {{ telemetryLoading ? 'Chargement...' : 'Rafraîchir' }}
+          </button>
+
+          <button
+            type="button"
+            class="secondary-button"
+            (click)="exportTelemetryReportCsv()"
+            [disabled]="telemetryReportCsvLoading || availableTelemetryMetrics.length === 0"
+          >
+            {{ telemetryReportCsvLoading ? 'Export CSV...' : 'Exporter CSV' }}
+          </button>
+
+          <button
+            type="button"
+            class="primary-button"
+            (click)="exportTelemetryReportPdf()"
+            [disabled]="telemetryReportPdfLoading || availableTelemetryMetrics.length === 0"
+          >
+            {{ telemetryReportPdfLoading ? 'Export PDF...' : 'Exporter PDF' }}
+          </button>
+        </div>
       </div>
 
       <div *ngIf="availableTelemetryMetrics.length === 0 && !telemetryLoading" class="info-card">
@@ -661,6 +681,14 @@
             />
           </div>
         </div>
+      </div>
+
+      <div *ngIf="telemetryReportSuccessMessage" class="success-card telemetry-report-feedback">
+        {{ telemetryReportSuccessMessage }}
+      </div>
+
+      <div *ngIf="telemetryReportErrorMessage" class="error-card telemetry-report-feedback">
+        {{ telemetryReportErrorMessage }}
       </div>
 
       <div *ngIf="telemetryErrorMessage" class="error-card">

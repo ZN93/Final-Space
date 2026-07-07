@@ -88,6 +88,11 @@ export class SatelliteDetailComponent implements OnInit {
   telemetryFrom = '';
   telemetryTo = '';
 
+  telemetryReportCsvLoading = false;
+  telemetryReportPdfLoading = false;
+  telemetryReportSuccessMessage = '';
+  telemetryReportErrorMessage = '';
+
   telemetryLoading = false;
   telemetryErrorMessage = '';
   telemetryEmptyMessage = '';
@@ -1020,4 +1025,111 @@ export class SatelliteDetailComponent implements OnInit {
 
     return new Date(timestamp).toLocaleString('fr-FR');
   }
+
+  exportTelemetryReportCsv(): void {
+    if (!this.satellite || this.selectedTelemetryMetrics.length === 0) {
+      this.telemetryReportErrorMessage = 'Sélectionne au moins une métrique à exporter.';
+      this.telemetryReportSuccessMessage = '';
+      return;
+    }
+
+    const fromIso = this.toIsoDateOrNull(this.telemetryFrom);
+    const toIso = this.toIsoDateOrNull(this.telemetryTo);
+
+    this.telemetryReportCsvLoading = true;
+    this.telemetryReportErrorMessage = '';
+    this.telemetryReportSuccessMessage = '';
+
+    const filename = `telemetry-report-${this.satellite.id}.csv`;
+
+    this.telemetryService
+      .exportTelemetryReportCsv(
+        this.satellite.id,
+        this.selectedTelemetryMetrics,
+        fromIso,
+        toIso
+      )
+      .subscribe({
+        next: (blob) => {
+          this.telemetryReportCsvLoading = false;
+          this.downloadBlob(blob, filename);
+          this.telemetryReportSuccessMessage = 'Rapport de télémétrie CSV généré avec succès.';
+        },
+        error: (error) => {
+          this.telemetryReportCsvLoading = false;
+          this.handleTelemetryReportError(error);
+        }
+      });
+  }
+
+  exportTelemetryReportPdf(): void {
+    if (!this.satellite || this.selectedTelemetryMetrics.length === 0) {
+      this.telemetryReportErrorMessage = 'Sélectionne au moins une métrique à exporter.';
+      this.telemetryReportSuccessMessage = '';
+      return;
+    }
+
+    const fromIso = this.toIsoDateOrNull(this.telemetryFrom);
+    const toIso = this.toIsoDateOrNull(this.telemetryTo);
+
+    this.telemetryReportPdfLoading = true;
+    this.telemetryReportErrorMessage = '';
+    this.telemetryReportSuccessMessage = '';
+
+    const filename = `telemetry-report-${this.satellite.id}.pdf`;
+
+    this.telemetryService
+      .exportTelemetryReportPdf(
+        this.satellite.id,
+        this.selectedTelemetryMetrics,
+        fromIso,
+        toIso
+      )
+      .subscribe({
+        next: (blob) => {
+          this.telemetryReportPdfLoading = false;
+          this.downloadBlob(blob, filename);
+          this.telemetryReportSuccessMessage = 'Rapport de télémétrie PDF généré avec succès.';
+        },
+        error: (error) => {
+          this.telemetryReportPdfLoading = false;
+          this.handleTelemetryReportError(error);
+        }
+      });
+  }
+
+  private handleTelemetryReportError(error: any): void {
+    if (error.status === 403) {
+      this.router.navigate(['/forbidden']);
+      return;
+    }
+
+    if (error.status === 404) {
+      this.telemetryReportErrorMessage = 'Satellite introuvable.';
+      return;
+    }
+
+    if (error.status === 400) {
+      this.telemetryReportErrorMessage = 'Filtres invalides pour le rapport de télémétrie.';
+      return;
+    }
+
+    this.telemetryReportErrorMessage = 'Impossible de générer le rapport de télémétrie.';
+  }
+
+  private downloadBlob(blob: Blob, filename: string): void {
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+
+    link.href = url;
+    link.download = filename;
+    link.style.display = 'none';
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    window.URL.revokeObjectURL(url);
+  }
+
 }

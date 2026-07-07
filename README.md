@@ -2621,11 +2621,229 @@ L’US20 ne couvre pas :
 
 ---
 
-### Conclusion
+## US21 - Exporter un rapport de télémétrie CSV/PDF
 
-L’US20 est validée.
+L’application permet d’exporter un rapport de télémétrie pour un satellite existant.
 
-Un utilisateur autorisé peut générer un rapport PDF complet depuis une mission existante. Le rapport contient les informations générales de la mission, ses satellites, les simulations, les alertes, les incidents et une synthèse automatique de l’état courant.
+Le rapport est généré à la demande par l’utilisateur et ne modifie pas les données en base. Il permet d’analyser, partager ou archiver les mesures de télémétrie associées à un satellite et à sa mission.
+
+---
+
+### Objectif
+
+Permettre à un utilisateur autorisé d’exporter les données de télémétrie d’un satellite, avec les anomalies et alertes associées.
+
+Le rapport peut être généré en deux formats :
+
+- CSV pour l’exploitation externe des données ;
+- PDF pour le partage, l’analyse ou l’archivage.
+
+---
+
+### Endpoints API
+
+| Méthode | Endpoint | Format | Rôles autorisés |
+|---|---|---|---|
+| `GET` | `/api/satellites/{satelliteId}/telemetry/report/csv` | CSV | ADMIN, OPERATEUR, LECTEUR |
+| `GET` | `/api/satellites/{satelliteId}/telemetry/report/pdf` | PDF | ADMIN, OPERATEUR, LECTEUR |
+
+---
+
+### Paramètres disponibles
+
+| Paramètre | Type | Obligatoire | Description |
+|---|---|---|---|
+| `metric` | `string` | Oui | Métrique à exporter. Peut être répétée pour exporter plusieurs métriques |
+| `from` | `Instant` | Non | Date de début de la période |
+| `to` | `Instant` | Non | Date de fin de la période |
+
+Exemple multi-métriques :
+
+```http
+GET /api/satellites/3/telemetry/report/csv?metric=temperature&metric=battery
+```
+
+Exemple avec période :
+
+```http
+GET /api/satellites/3/telemetry/report/pdf?metric=temperature&from=2026-01-01T10:00:00Z&to=2026-01-01T11:00:00Z
+```
+
+---
+
+### Noms des fichiers générés
+
+CSV :
+
+```text
+telemetry-report-<satelliteId>.csv
+```
+
+PDF :
+
+```text
+telemetry-report-<satelliteId>.pdf
+```
+
+---
+
+### Contenu du rapport CSV
+
+Le fichier CSV contient les colonnes suivantes :
+
+```text
+missionId;missionName;satelliteId;satelliteName;timestamp;metric;value;anomalyFlag;anomalyType;anomalySeverity;anomalyMessage
+```
+
+| Colonne | Description |
+|---|---|
+| `missionId` | Identifiant de la mission |
+| `missionName` | Nom de la mission |
+| `satelliteId` | Identifiant du satellite |
+| `satelliteName` | Nom du satellite |
+| `timestamp` | Date et heure de la mesure |
+| `metric` | Métrique mesurée |
+| `value` | Valeur mesurée |
+| `anomalyFlag` | Indique si une anomalie est associée au point |
+| `anomalyType` | Type d’anomalie détectée |
+| `anomalySeverity` | Gravité de l’anomalie |
+| `anomalyMessage` | Message descriptif de l’anomalie |
+
+Le fichier CSV utilise :
+
+- encodage UTF-8 avec BOM ;
+- séparateur `;` ;
+- fin de ligne CRLF.
+
+---
+
+### Contenu du rapport PDF
+
+Le rapport PDF contient les sections suivantes :
+
+| Section | Contenu |
+|---|---|
+| Métadonnées du rapport | Date de génération, auteur, identifiant satellite |
+| Informations générales | Mission, satellite, statut, paramètres orbitaux |
+| Périmètre du rapport | Métriques, période, nombre de points, anomalies et alertes |
+| Synthèse des métriques | Nombre de points, minimum, maximum et moyenne par métrique |
+| Synthèse des anomalies | Nombre total, répartition par type et gravité |
+| Dernières anomalies | Liste des anomalies principales |
+| Alertes associées | Synthèse des alertes liées aux données analysées |
+| Derniers points de télémétrie | Extrait des derniers points inclus |
+| Conclusion automatique | Synthèse de l’état des données exportées |
+
+---
+
+### Règles métier
+
+| Règle | Description |
+|---|---|
+| Génération à la demande | L’export est lancé uniquement suite à une action utilisateur |
+| Données existantes | Les données exportées sont celles présentes en base |
+| Aucune modification | L’export n’altère pas les données de télémétrie |
+| Format standardisé | Le PDF utilise un modèle unique |
+| Export satellite | L’export concerne un seul satellite |
+| Export multi-métriques | Plusieurs métriques peuvent être exportées en une demande |
+| Période optionnelle | `from` et `to` permettent de filtrer les données |
+| Limite de volumétrie | L’export est limité à 10 000 points de télémétrie |
+
+---
+
+### Frontend
+
+La page détail satellite propose deux boutons dans la section télémétrie :
+
+```text
+Exporter CSV
+Exporter PDF
+```
+
+L’utilisateur peut :
+
+- sélectionner une ou plusieurs métriques ;
+- définir une période optionnelle ;
+- exporter les données affichées en CSV ;
+- exporter un rapport synthétique en PDF.
+
+Les erreurs sont gérées côté interface :
+
+- `403` : redirection vers la page forbidden ;
+- `404` : affichage du message `Satellite introuvable` ;
+- `400` : affichage du message `Filtres invalides pour le rapport de télémétrie` ;
+- autre erreur : affichage d’un message d’échec de génération.
+
+---
+
+### Sécurité
+
+Les rôles autorisés à exporter un rapport de télémétrie sont :
+
+- ADMIN ;
+- OPERATEUR ;
+- LECTEUR.
+
+Un utilisateur non authentifié ou non autorisé ne peut pas générer le rapport.
+
+---
+
+### Tests réalisés
+
+Les tests d’intégration JUnit / Spring Boot / MockMvc vérifient :
+
+- génération du rapport CSV par un ADMIN ;
+- génération du rapport CSV par un LECTEUR ;
+- génération du rapport PDF par un ADMIN ;
+- génération du rapport PDF par un LECTEUR ;
+- filtrage par métrique ;
+- filtrage par période ;
+- erreur 404 si le satellite n’existe pas ;
+- erreur 400 si aucune métrique n’est fournie ;
+- erreur 400 si la période est invalide ;
+- refus d’un utilisateur non connecté ;
+- présence des headers de téléchargement ;
+- fichier CSV non vide ;
+- fichier PDF non vide ;
+- signature PDF commençant par `%PDF`.
+
+Validation manuelle réalisée :
+
+- export CSV depuis Postman ;
+- export PDF depuis Postman ;
+- export CSV depuis le navigateur ;
+- export PDF depuis le navigateur ;
+- vérification du contenu CSV ;
+- ouverture correcte du PDF ;
+- vérification du build frontend.
+
+---
+
+### Commandes de validation
+
+Backend :
+
+```bash
+./mvnw test
+```
+
+Frontend :
+
+```bash
+npm run build
+```
+
+---
+
+### Hors périmètre
+
+L’US21 ne couvre pas :
+
+- personnalisation avancée du contenu du rapport ;
+- export multi-satellites en une seule opération ;
+- génération automatique planifiée ;
+- envoi automatique par email ;
+- archivage automatique du rapport ;
+- signature numérique du PDF.
 
 ---
 
