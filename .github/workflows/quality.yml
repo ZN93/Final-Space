@@ -58,6 +58,10 @@ jobs:
           SPRING_MONGODB_URI: mongodb://localhost:27017/finalspace-test
         run: ./mvnw clean verify
 
+      - name: Backend - copy dependencies for Sonar
+        working-directory: backend
+        run: ./mvnw dependency:copy-dependencies -DincludeScope=test -DskipTests
+
       - name: Frontend - install dependencies
         working-directory: frontend
         run: npm ci
