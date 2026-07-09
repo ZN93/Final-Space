@@ -96,9 +96,10 @@ class TelemetryReportAuthorizationIntegrationTest {
         assertThat(csv).startsWith(
                 "missionId;missionName;satelliteId;satelliteName;timestamp;metric;value;anomalyFlag;anomalyType;anomalySeverity;anomalyMessage"
         );
-        assertThat(csv).contains("temperature");
-        assertThat(csv).contains("battery");
-        assertThat(csv).contains("true");
+        assertThat(csv)
+                .contains("temperature")
+                .contains("battery")
+                .contains("true");
         assertThat(csv).contains("THRESHOLD");
     }
 
