@@ -50,7 +50,7 @@ public class SecurityConfig {
     private String corsAllowedOrigins;
 
     @Bean
-    @SuppressWarnings({"java:S4502"})
+    @SuppressWarnings({"java:S4502", "java:S112", "java:S1130"})
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -96,6 +96,7 @@ public class SecurityConfig {
     }
 
     @Bean
+    @SuppressWarnings({"java:S112", "java:S1130"})
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
         return configuration.getAuthenticationManager();
     }
