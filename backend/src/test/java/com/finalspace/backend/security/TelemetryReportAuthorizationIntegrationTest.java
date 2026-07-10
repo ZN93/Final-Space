@@ -92,15 +92,15 @@ class TelemetryReportAuthorizationIntegrationTest {
         String csv = result.getResponse().getContentAsString(StandardCharsets.UTF_8)
                 .replace("\uFEFF", "");
 
-        assertThat(csv).isNotBlank();
-        assertThat(csv).startsWith(
-                "missionId;missionName;satelliteId;satelliteName;timestamp;metric;value;anomalyFlag;anomalyType;anomalySeverity;anomalyMessage"
-        );
         assertThat(csv)
+                .isNotBlank()
+                .startsWith(
+                "missionId;missionName;satelliteId;satelliteName;timestamp;metric;value;anomalyFlag;anomalyType;anomalySeverity;anomalyMessage"
+                )
                 .contains("temperature")
                 .contains("battery")
-                .contains("true");
-        assertThat(csv).contains("THRESHOLD");
+                .contains("true")
+                .contains("THRESHOLD");
     }
 
     @Test
@@ -170,8 +170,9 @@ class TelemetryReportAuthorizationIntegrationTest {
         String csv = result.getResponse().getContentAsString(StandardCharsets.UTF_8)
                 .replace("\uFEFF", "");
 
-        assertThat(csv).contains("temperature");
-        assertThat(csv).doesNotContain(";battery;");
+        assertThat(csv)
+                .contains("temperature")
+                .doesNotContain(";battery;");
     }
 
     @Test
@@ -189,9 +190,10 @@ class TelemetryReportAuthorizationIntegrationTest {
         String csv = result.getResponse().getContentAsString(StandardCharsets.UTF_8)
                 .replace("\uFEFF", "");
 
-        assertThat(csv).contains("2026-01-01T10:05:00Z");
-        assertThat(csv).contains("2026-01-01T10:10:00Z");
-        assertThat(csv).doesNotContain("2026-01-01T10:00:00Z");
+        assertThat(csv)
+                .contains("2026-01-01T10:05:00Z")
+                .contains("2026-01-01T10:10:00Z")
+                .doesNotContain("2026-01-01T10:00:00Z");
     }
 
     @Test

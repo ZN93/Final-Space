@@ -23,6 +23,7 @@ import java.util.List;
 
 @Configuration
 @RequiredArgsConstructor
+@SuppressWarnings({"java:S112", "java:S4502"})
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -53,6 +54,8 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                // CSRF disabled because the backend is a stateless REST API secured with JWT Bearer tokens.
+                // The application does not rely on server-side sessions or cookie-based authentication.
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(exception -> exception
