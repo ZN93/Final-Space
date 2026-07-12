@@ -1,12 +1,11 @@
-import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { Component, EventEmitter, Output, inject } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../auth/auth.service';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive],
+  imports: [RouterLink],
   templateUrl: './app-header.component.html',
   styleUrl: './app-header.component.css'
 })
@@ -15,16 +14,15 @@ export class AppHeaderComponent {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
 
-  isAuthenticated(): boolean {
-    return this.authService.isAuthenticated();
+  @Output()
+  readonly menuToggle = new EventEmitter<void>();
+
+  getRole(): string {
+    return this.authService.getUserRole() ?? 'UTILISATEUR';
   }
 
-  getRole(): string | null {
-    return this.authService.getUserRole();
-  }
-
-  isAdmin(): boolean {
-    return this.authService.isAdmin();
+  toggleMenu(): void {
+    this.menuToggle.emit();
   }
 
   logout(): void {

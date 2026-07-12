@@ -1,46 +1,50 @@
-<header *ngIf="isAuthenticated()" class="app-header">
-  <div class="brand" routerLink="/dashboard">
-    Final Space
-  </div>
+<header class="app-header">
 
-  <nav class="nav-links">
+  <div class="header-left">
+
+    <button
+      type="button"
+      class="menu-button"
+      aria-label="Ouvrir ou fermer la navigation"
+      (click)="toggleMenu()"
+    >
+      ☰
+    </button>
+
     <a
       routerLink="/dashboard"
-      routerLinkActive="active"
-      class="nav-link"
+      class="brand"
+      aria-label="Accéder au tableau de bord"
     >
-      Dashboard
+      <span class="brand-mark">FS</span>
+
+      <span class="brand-content">
+        <strong>Final Space</strong>
+        <small>Mission Control</small>
+      </span>
     </a>
 
-    <a
-      routerLink="/missions"
-      routerLinkActive="active"
-      class="nav-link"
-    >
-      Missions
-    </a>
+  </div>
 
-    <a
-      class="nav-link disabled"
-      title="Fonctionnalité à venir"
-    >
-      Satellites
-    </a>
-
-    <a
-      *ngIf="isAdmin()"
-      class="nav-link disabled"
-      title="Fonctionnalité à venir"
-    >
-      Administration
-    </a>
-  </nav>
+  <div class="system-status">
+    <span class="status-dot"></span>
+    <span>Système opérationnel</span>
+  </div>
 
   <div class="user-zone">
-    <span class="role-badge">{{ getRole() }}</span>
 
-    <button type="button" class="logout-button" (click)="logout()">
-      Logout
+    <span class="role-badge">
+      {{ getRole() }}
+    </span>
+
+    <button
+      type="button"
+      class="logout-button"
+      (click)="logout()"
+    >
+      Déconnexion
     </button>
+
   </div>
+
 </header>

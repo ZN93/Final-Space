@@ -1,84 +1,176 @@
-<div class="min-h-screen bg-slate-950 text-white p-8">
+<section class="dashboard-page">
 
-  <div class="mb-8">
-      <h1 class="text-4xl font-bold">
-          Final Space Dashboard
+  <header class="page-header">
+    <div>
+      <p class="page-eyebrow">
+        Centre de contrôle
+      </p>
+
+      <h1>
+        Vue générale
       </h1>
 
-      <p class="text-slate-400 mt-2">
-          Vue d’ensemble des opérations spatiales.
+      <p class="page-description">
+        Supervision des missions, satellites, simulations et événements
+        opérationnels.
       </p>
-  </div>
-
-    <div class="grid grid-cols-3 gap-6">
-
-        <div class="bg-slate-900 p-6 rounded-2xl">
-            <h2 class="text-xl font-semibold">
-                Missions
-            </h2>
-
-            <p class="mt-4 text-slate-400">
-                {{ role === 'LECTEUR' ? 'Mode lecture seule' : 'Gestion des missions opérationnelles' }}
-            </p>
-
-            <div class="mt-4 flex gap-3">
-                <a
-                    routerLink="/missions"
-                    class="rounded-lg bg-slate-700 px-4 py-2 font-semibold text-white hover:bg-slate-600"
-                >
-                    {{ role === 'LECTEUR' ? 'Consulter les missions' : 'Voir les missions' }}
-                </a>
-
-                <a
-                    *ngIf="role === 'ADMIN' || role === 'OPERATEUR'"
-                    routerLink="/missions/create"
-                    class="rounded-lg bg-amber-500 px-4 py-2 font-semibold text-slate-950 hover:bg-amber-400"
-                >
-                    Créer une mission
-                </a>
-            </div>
-        </div>
-
-        <div class="bg-slate-900 p-6 rounded-2xl">
-            <h2 class="text-xl font-semibold">
-                Satellites
-            </h2>
-
-            <button
-                    *ngIf="role === 'ADMIN' || role === 'OPERATEUR'"
-                    class="mt-4 rounded-lg bg-amber-500 px-4 py-2 font-semibold text-slate-950"
-            >
-                Ajouter un satellite
-            </button>
-
-            <p *ngIf="role === 'LECTEUR'" class="mt-4 text-slate-400">
-                Consultation uniquement
-            </p>
-        </div>
-
-        <div class="bg-slate-900 p-6 rounded-2xl">
-            <h2 class="text-xl font-semibold">
-                Telemetry
-            </h2>
-
-            <p class="mt-4 text-slate-400">
-                Accessible à tous les rôles.
-            </p>
-        </div>
-
     </div>
 
-    <div
-            *ngIf="role === 'ADMIN'"
-            class="mt-6 bg-slate-900 p-6 rounded-2xl border border-red-800"
-    >
-        <h2 class="text-xl font-semibold">
-            Administration
+    <div class="page-actions">
+      <span class="role-indicator">
+        {{ roleLabel }}
+      </span>
+
+      <a
+        routerLink="/missions"
+        class="primary-action"
+      >
+        Voir les missions
+      </a>
+    </div>
+  </header>
+
+  <section class="summary-grid">
+
+    <article class="summary-card">
+      <span class="summary-label">
+        Environnement
+      </span>
+
+      <strong>
+        Local
+      </strong>
+
+      <small>
+        Application frontend active
+      </small>
+    </article>
+
+    <article class="summary-card">
+      <span class="summary-label">
+        Profil
+      </span>
+
+      <strong>
+        {{ roleLabel }}
+      </strong>
+
+      <small>
+        Accès adapté au rôle
+      </small>
+    </article>
+
+    <article class="summary-card">
+      <span class="summary-label">
+        Modules
+      </span>
+
+      <strong>
+        {{ modules.length }}
+      </strong>
+
+      <small>
+        Fonctionnalités opérationnelles
+      </small>
+    </article>
+
+    <article class="summary-card">
+      <span class="summary-label">
+        État système
+      </span>
+
+      <strong class="status-value">
+        Interface disponible
+      </strong>
+
+      <small>
+        Backend non vérifié
+      </small>
+    </article>
+
+  </section>
+
+  <section class="dashboard-section">
+
+    <div class="section-header">
+      <div>
+        <h2>
+          Modules opérationnels
         </h2>
 
-        <button class="mt-4 rounded-lg bg-red-600 px-4 py-2 font-semibold text-white">
-            Gérer les utilisateurs
-        </button>
+        <p>
+          Accédez aux fonctionnalités principales de Final Space.
+        </p>
+      </div>
     </div>
 
-</div>
+    <div class="module-grid">
+
+      <article
+        *ngFor="let module of modules"
+        class="module-card"
+      >
+        <div class="module-card-header">
+
+          <span class="module-icon">
+            {{ module.icon }}
+          </span>
+
+          <span
+            class="availability-badge"
+            [class.available]="module.available"
+          >
+            {{ module.available ? 'Disponible' : 'Indisponible' }}
+          </span>
+
+        </div>
+
+        <div class="module-content">
+          <h3>
+            {{ module.title }}
+          </h3>
+
+          <p>
+            {{ module.description }}
+          </p>
+        </div>
+
+        <a
+          *ngIf="module.route"
+          [routerLink]="module.route"
+          class="module-link"
+        >
+          {{ module.actionLabel }}
+          <span aria-hidden="true">→</span>
+        </a>
+      </article>
+
+    </div>
+
+  </section>
+
+  <section
+    *ngIf="role === 'ADMIN'"
+    class="admin-section"
+  >
+    <div>
+      <p class="page-eyebrow">
+        Administration
+      </p>
+
+      <h2>
+        Espace administrateur
+      </h2>
+
+      <p>
+        Les fonctionnalités de gestion des utilisateurs ne disposent pas encore
+        d’une page frontend dédiée.
+      </p>
+    </div>
+
+    <span class="coming-soon-badge">
+      Interface à compléter
+    </span>
+  </section>
+
+</section>

@@ -27,17 +27,14 @@ export class AuthService {
 
   private readonly tokenKey = 'finalspace_token';
 
-  private readonly apiUrl = '';
-
   login(credentials: LoginRequest): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(
-        `/auth/login`,
-        credentials
-    ).pipe(
+    return this.http
+      .post<LoginResponse>('/auth/login', credentials)
+      .pipe(
         tap((response) => {
           localStorage.setItem(this.tokenKey, response.token);
         })
-    );
+      );
   }
 
   logout(): void {
@@ -49,7 +46,26 @@ export class AuthService {
   }
 
   isAuthenticated(): boolean {
-    return !!this.getToken();
+    const token = this.getToken();
+
+    if (!token) {
+      return false;
+    }
+
+    try {
+      const decoded = jwtDecode<JwtPayload>(token);
+      const expirationTimeMs = decoded.exp * 1000;
+
+      if (expirationTimeMs <= Date.now()) {
+        this.logout();
+        return false;
+      }
+
+      return true;
+    } catch {
+      this.logout();
+      return false;
+    }
   }
 
   getUserRole(): string | null {
@@ -62,6 +78,20 @@ export class AuthService {
     try {
       const decoded = jwtDecode<JwtPayload>(token);
       return decoded.role.replace('ROLE_', '');
+    } catch {
+      return null;
+    }
+  }
+
+  getUserEmail(): string | null {
+    const token = this.getToken();
+
+    if (!token) {
+      return null;
+    }
+
+    try {
+      return jwtDecode<JwtPayload>(token).sub;
     } catch {
       return null;
     }
