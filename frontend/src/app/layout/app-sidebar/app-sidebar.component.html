@@ -1,0 +1,32 @@
+<aside
+  class="app-sidebar"
+  [ngClass]="{ collapsed: collapsed }"
+>
+  <nav aria-label="Navigation principale">
+    <p class="nav-section-title">Navigation</p>
+
+    <a
+      *ngFor="let item of items"
+      [routerLink]="item.route"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' }"
+      class="nav-item"
+    >
+      <span class="nav-icon">{{ item.icon }}</span>
+
+      <span class="nav-content">
+        <strong>{{ item.label }}</strong>
+        <small>{{ item.description }}</small>
+      </span>
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <span class="status-dot"></span>
+
+    <div class="nav-content">
+      <strong>Final Space</strong>
+      <small>Environnement local</small>
+    </div>
+  </div>
+</aside>
