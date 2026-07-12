@@ -31,6 +31,10 @@ Le projet est organisé en deux parties :
 * Angular CLI
 * Java 17
 * Maven
+* PostgreSQL
+* MongoDB
+* Docker
+* Docker Compose
 
 ---
 
@@ -57,10 +61,10 @@ http://localhost:8080
 Endpoint de vérification :
 
 ```http
-GET /api/health
+GET /actuator/health
 ```
 
-Cet endpoint est protégé : il nécessite un token JWT valide.
+Cet endpoint est public afin d’être utilisé par Docker et par les workflows de tests d’intégration.
 
 ---
 
@@ -3376,13 +3380,13 @@ Réponse :
 | Nombre total de satellites | Satellites | Disponible |
 | Nombre de satellites actifs | Satellites | Disponible |
 | Nombre de satellites inactifs | Satellites | Disponible |
-| Alertes actives | Futur module Alertes | Valeur temporaire à `0` |
-| Alertes acquittées | Futur module Alertes | Valeur temporaire à `0` |
-| Incidents ouverts | Futur module Incidents | Valeur temporaire à `0` |
-| Incidents en cours | Futur module Incidents | Valeur temporaire à `0` |
-| Incidents clôturés | Futur module Incidents | Valeur temporaire à `0` |
-| Dernières simulations | Futur module Simulations | Liste vide temporaire |
-| Derniers imports télémétrie | Futur module Télémétrie | Liste vide temporaire |
+| Alertes actives | Alertes | Valeur temporaire à `0` |
+| Alertes acquittées | Alertes | Valeur temporaire à `0` |
+| Incidents ouverts | Incidents | Valeur temporaire à `0` |
+| Incidents en cours | Incidents | Valeur temporaire à `0` |
+| Incidents clôturés | Incidents | Valeur temporaire à `0` |
+| Dernières simulations | Simulations | Liste vide temporaire |
+| Derniers imports télémétrie | Télémétrie | Liste vide temporaire |
 
 ---
 
@@ -3885,51 +3889,357 @@ Les tests couvrent notamment :
 - les règles d’accès ADMIN / OPERATEUR / LECTEUR ;
 - le refus de simulation sur satellite inactif ou mission clôturée.
 
-### Tests frontend
+### Validation frontend actuelle
 
-Commande :
+Le frontend est actuellement validé par son build Angular :
 
 ```bash
-cd frontend
 npm run build
 ```
-
-Le build Angular permet de valider que l’application frontend compile correctement.
 
 ---
 
 ## Intégration continue
 
-Le projet utilise GitHub Actions avec un workflow CI minimal.
+Le projet utilise GitHub Actions pour automatiser les contrôles de qualité à chaque pull request vers `main`.
 
-La CI vérifie :
+La CI exécute :
 
-- la compilation et les tests backend ;
-- la compilation frontend.
+- les tests backend JUnit ;
+- les tests d’intégration Spring Boot avec MockMvc ;
+- la génération du rapport JaCoCo ;
+- le build Angular ;
+- l’analyse SonarQube Cloud ;
+- la vérification de la Quality Gate ;
+- les tests d’intégration Docker Compose.
 
-Workflow :
+Les workflows sont stockés dans :
+
+```text
+.github/workflows/
+```
+
+État actuel :
+
+```text
+Backend CI                 PASS
+Frontend Build             PASS
+Quality / SonarQube Cloud  PASS
+Docker Integration Tests   PASS
+Quality Gate               PASSED
+```
+
+---
+## Qualité logicielle, CI et tests d’intégration
+
+Le projet utilise une chaîne de validation automatisée basée sur GitHub Actions.
+
+Cette chaîne couvre :
+
+- les tests backend JUnit ;
+- les tests d’intégration Spring Boot avec MockMvc ;
+- la génération de la couverture JaCoCo ;
+- le build du frontend Angular ;
+- l’analyse statique avec SonarQube Cloud ;
+- la validation de la Quality Gate ;
+- les tests d’intégration de l’environnement Docker Compose.
+
+---
+
+### Workflows GitHub Actions
+
+Les workflows principaux sont :
 
 ```text
 .github/workflows/ci.yml
+.github/workflows/quality.yml
+.github/workflows/integration-tests.yml
+```
+
+| Workflow | Objectif |
+|---|---|
+| `ci.yml` | Compiler et tester le backend, puis construire le frontend |
+| `quality.yml` | Générer la couverture JaCoCo et exécuter l’analyse SonarQube Cloud |
+| `integration-tests.yml` | Démarrer la stack Docker complète et exécuter des smoke tests |
+
+---
+
+### Tests backend
+
+Les tests backend sont exécutés avec JUnit, Spring Boot Test et MockMvc.
+
+Commande locale :
+
+```bash
+cd backend
+./mvnw clean verify
+```
+
+Cette commande :
+
+- compile le backend ;
+- exécute les tests automatisés ;
+- exécute les tests d’intégration Spring Boot ;
+- génère le rapport de couverture JaCoCo ;
+- construit le JAR Spring Boot.
+
+Le projet contient actuellement plus de 200 tests backend couvrant notamment :
+
+- l’authentification JWT ;
+- les règles RBAC ;
+- les missions ;
+- les satellites ;
+- le dashboard ;
+- les alertes ;
+- l’acquittement des alertes ;
+- les incidents ;
+- les simulations orbitales ;
+- les transferts de Hohmann ;
+- l’historique des simulations ;
+- l’import CSV de télémétrie ;
+- la visualisation de télémétrie ;
+- la détection d’anomalies ;
+- la génération automatique d’alertes ;
+- les exports CSV et PDF ;
+- les rapports de mission ;
+- les rapports de télémétrie.
+
+---
+
+### Couverture JaCoCo
+
+La couverture du backend Java est générée avec JaCoCo.
+
+Rapport HTML local :
+
+```text
+backend/target/site/jacoco/index.html
+```
+
+Rapport XML utilisé par SonarQube Cloud :
+
+```text
+backend/target/site/jacoco/jacoco.xml
+```
+
+Commande pour générer le rapport :
+
+```bash
+cd backend
+./mvnw clean verify
+```
+
+La couverture backend observée avec JaCoCo est d’environ :
+
+```text
+88 %
+```
+
+Cette valeur concerne uniquement le code Java backend.
+
+---
+
+### Analyse SonarQube Cloud
+
+Le projet est analysé automatiquement par SonarQube Cloud depuis GitHub Actions.
+
+L’analyse porte sur :
+
+- le backend Java ;
+- le frontend TypeScript ;
+- les fichiers HTML ;
+- les fichiers CSS ;
+- la couverture JaCoCo ;
+- les duplications ;
+- la maintenabilité ;
+- la fiabilité ;
+- la sécurité.
+
+Configuration :
+
+```text
+sonar-project.properties
+```
+
+État validé :
+
+| Indicateur | Résultat |
+|---|---|
+| Quality Gate | Passed |
+| Security Rating | A |
+| Security Issues | 0 |
+| Maintainability Rating | A |
+| Couverture globale SonarQube Cloud | 57,2 % |
+| Duplications globales | 2,2 % |
+
+La couverture globale SonarQube Cloud est inférieure à la couverture JaCoCo, car Sonar analyse également le frontend, dont la couverture automatisée n’est pas encore remontée.
+
+---
+
+### Quality Gate
+
+La Quality Gate SonarQube Cloud est utilisée pour valider la qualité du nouveau code.
+
+Elle contrôle notamment :
+
+- la sécurité du nouveau code ;
+- la maintenabilité du nouveau code ;
+- la couverture des nouvelles lignes ;
+- le taux de duplication du nouveau code.
+
+État actuel :
+
+```text
+Quality Gate: Passed
+```
+
+---
+
+### Tests d’intégration Docker Compose
+
+Un workflow GitHub Actions démarre l’ensemble de la stack applicative :
+
+```text
+frontend
+backend
+PostgreSQL
+MongoDB
+```
+
+Les tests d’intégration vérifient :
+
+- la validation du fichier `docker-compose.yml` ;
+- le build des images Docker ;
+- le démarrage de PostgreSQL ;
+- le démarrage de MongoDB ;
+- les healthchecks des bases ;
+- le démarrage du backend Spring Boot ;
+- la connexion du backend à PostgreSQL ;
+- la connexion du backend à MongoDB ;
+- l’accessibilité de `/actuator/health` ;
+- l’accessibilité du frontend Nginx ;
+- le fonctionnement du proxy `/api` ;
+- le fonctionnement du proxy `/auth`.
+
+Le workflow est défini dans :
+
+```text
+.github/workflows/integration-tests.yml
+```
+
+---
+
+### Endpoint de santé
+
+Le backend expose un endpoint Actuator public utilisé par Docker et GitHub Actions :
+
+```http
+GET /actuator/health
+```
+
+Réponse attendue :
+
+```json
+{
+  "status": "UP"
+}
+```
+
+Cet endpoint ne nécessite pas de token JWT.
+
+---
+
+### Ordre de validation
+
+La chaîne de validation suit l’ordre suivant :
+
+```text
+Tests backend JUnit
+        ↓
+Tests d’intégration Spring Boot / MockMvc
+        ↓
+Couverture JaCoCo
+        ↓
+Build frontend Angular
+        ↓
+Analyse SonarQube Cloud
+        ↓
+Quality Gate
+        ↓
+Tests d’intégration Docker Compose
+```
+
+Une pull request ne doit être fusionnée que lorsque les contrôles obligatoires sont validés.
+
+---
+
+### Commandes locales de validation
+
+Backend :
+
+```bash
+cd backend
+./mvnw clean verify
+```
+
+Frontend :
+
+```bash
+cd frontend
+npm ci
+npm run build
+```
+
+Docker Compose :
+
+```bash
+docker compose config
+docker compose up --build
+```
+
+Healthcheck :
+
+```bash
+curl http://localhost:8080/actuator/health
+```
+
+Arrêt :
+
+```bash
+docker compose down
 ```
 
 ---
 
 ## État du projet
 
-À ce stade :
+À ce stade, les fonctionnalités principales sont opérationnelles :
 
-- frontend opérationnel ;
-- backend opérationnel ;
-- authentification JWT opérationnelle ;
-- RBAC opérationnel ;
-- gestion des missions opérationnelle ;
-- gestion des satellites opérationnelle ;
-- consultation des alertes opérationnelle ;
-- acquittement des alertes opérationnel ;
-- gestion des incidents opérationnelle ;
-- tests backend en place ;
-- CI GitHub Actions en place.
+- authentification JWT ;
+- gestion des rôles RBAC ;
+- gestion des utilisateurs ;
+- gestion des missions ;
+- gestion des satellites ;
+- dashboard mission ;
+- gestion des alertes ;
+- acquittement des alertes ;
+- gestion des incidents ;
+- simulation orbitale ;
+- transfert de Hohmann ;
+- historique des simulations ;
+- import CSV de télémétrie ;
+- visualisation graphique de la télémétrie ;
+- détection automatique d’anomalies ;
+- génération automatique d’alertes ;
+- export de simulations CSV/PDF ;
+- génération de rapports mission PDF ;
+- export de rapports télémétrie CSV/PDF ;
+- dockerisation complète ;
+- tests automatisés ;
+- couverture JaCoCo ;
+- analyse SonarQube Cloud ;
+- tests d’intégration Docker Compose ;
+- CI GitHub Actions.
 
 ---
 
@@ -3940,26 +4250,44 @@ Workflow :
 | Authentification JWT | Réalisée |
 | Gestion des rôles RBAC | Réalisée |
 | Protection des routes frontend | Réalisée |
+| Gestion des utilisateurs | Réalisée |
 | Gestion des missions | Réalisée |
 | Gestion des satellites | Réalisée |
+| Dashboard mission | Réalisé |
 | Consultation des alertes | Réalisée |
-| Acquittement des alertes | Réalisée |
+| Acquittement des alertes | Réalisé |
 | Gestion des incidents | Réalisée |
 | Simulation orbitale | Réalisée |
-| Tests backend | Réalisés |
-| CI minimale | Réalisée |
+| Transfert de Hohmann | Réalisé |
+| Historique des simulations | Réalisé |
+| Import CSV de télémétrie | Réalisé |
+| Visualisation de télémétrie | Réalisée |
+| Détection d’anomalies | Réalisée |
+| Génération automatique d’alertes | Réalisée |
+| Export simulations CSV/PDF | Réalisé |
+| Rapport mission PDF | Réalisé |
+| Rapport télémétrie CSV/PDF | Réalisé |
+| Dockerisation complète | Réalisée |
+| Tests backend JUnit | Réalisés |
+| Tests d’intégration Spring Boot | Réalisés |
+| Couverture JaCoCo | Réalisée |
+| Analyse SonarQube Cloud | Réalisée |
+| Quality Gate | Passed |
+| Tests d’intégration Docker Compose | Réalisés |
+| CI GitHub Actions | Réalisée |
 
 ---
 
 ## Prochaines étapes
 
-Les prochaines fonctionnalités métier prévues sont :
+Les prochaines étapes concernent principalement la finalisation et la préparation de la démonstration :
 
-- gestion des simulations orbitales ;
-- import et analyse de télémétrie ;
-- détection d’anomalies ;
-- génération automatique d’alertes ;
-- gestion des incidents ;
-- simulation orbitale opérationnelle ;
-- page détail satellite ajoutée ;
-- génération de rapports.
+- préparer un jeu de données de démonstration ;
+- rédiger le scénario de démonstration finale ;
+- exécuter une campagne complète de tests fonctionnels ;
+- vérifier les parcours ADMIN, OPERATEUR et LECTEUR ;
+- documenter les résultats de l’US23 ;
+- améliorer progressivement les issues de fiabilité restantes ;
+- ajouter des tests frontend automatisés ;
+- remonter la couverture frontend dans SonarQube Cloud ;
+- préparer un éventuel déploiement sur un environnement distant.
