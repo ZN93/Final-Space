@@ -1,0 +1,261 @@
+<p>user-form-page works!</p>
+<section class="user-form-page">
+
+  <header class="page-header">
+
+    <div>
+      <p class="page-eyebrow">
+        Administration
+      </p>
+
+      <h1>
+        {{ pageTitle }}
+      </h1>
+
+      <p class="page-description">
+        {{
+          isEditMode
+            ? 'Modifiez l’adresse email ou le rôle du compte.'
+            : 'Créez un nouveau compte utilisateur pour Final Space.'
+        }}
+      </p>
+    </div>
+
+    <a
+      routerLink="/admin/users"
+      class="back-link"
+    >
+      Retour à la liste
+    </a>
+
+  </header>
+
+  <div
+    *ngIf="successMessage"
+    class="message-card success-message"
+    role="status"
+  >
+    {{ successMessage }}
+  </div>
+
+  <div
+    *ngIf="errorMessage"
+    class="message-card error-message"
+    role="alert"
+  >
+    {{ errorMessage }}
+  </div>
+
+  <div
+    *ngIf="loading"
+    class="state-card"
+  >
+    Chargement de l’utilisateur...
+  </div>
+
+  <form
+    *ngIf="!loading"
+    class="user-form-card"
+    [formGroup]="form"
+    (ngSubmit)="submit()"
+  >
+
+    <section class="form-section">
+
+      <div class="section-heading">
+        <span class="section-number">
+          01
+        </span>
+
+        <div>
+          <h2>
+            Informations du compte
+          </h2>
+
+          <p>
+            Renseignez les informations principales de l’utilisateur.
+          </p>
+        </div>
+      </div>
+
+      <div class="form-grid">
+
+        <div class="form-field full-width">
+
+          <label for="user-email">
+            Adresse email
+          </label>
+
+          <input
+            id="user-email"
+            type="email"
+            formControlName="email"
+            autocomplete="email"
+            placeholder="utilisateur@finalspace.com"
+          >
+
+          <small
+            *ngIf="
+              emailControl.touched &&
+              emailControl.hasError('required')
+            "
+            class="field-error"
+          >
+            L’adresse email est obligatoire.
+          </small>
+
+          <small
+            *ngIf="
+              emailControl.touched &&
+              emailControl.hasError('email')
+            "
+            class="field-error"
+          >
+            L’adresse email doit être valide.
+          </small>
+
+          <small
+            *ngIf="
+              emailControl.touched &&
+              emailControl.hasError('maxlength')
+            "
+            class="field-error"
+          >
+            L’adresse email est trop longue.
+          </small>
+
+        </div>
+
+        <div
+          *ngIf="!isEditMode"
+          class="form-field full-width"
+        >
+
+          <label for="user-password">
+            Mot de passe
+          </label>
+
+          <input
+            id="user-password"
+            type="password"
+            formControlName="password"
+            autocomplete="new-password"
+            placeholder="8 caractères minimum"
+          >
+
+          <small class="field-help">
+            Le mot de passe doit contenir au moins 8 caractères.
+          </small>
+
+          <small
+            *ngIf="
+              passwordControl.touched &&
+              passwordControl.hasError('required')
+            "
+            class="field-error"
+          >
+            Le mot de passe est obligatoire.
+          </small>
+
+          <small
+            *ngIf="
+              passwordControl.touched &&
+              passwordControl.hasError('minlength')
+            "
+            class="field-error"
+          >
+            Le mot de passe doit contenir au moins 8 caractères.
+          </small>
+
+        </div>
+
+      </div>
+
+    </section>
+
+    <section class="form-section">
+
+      <div class="section-heading">
+        <span class="section-number">
+          02
+        </span>
+
+        <div>
+          <h2>
+            Rôle et autorisations
+          </h2>
+
+          <p>
+            Définissez le niveau d’accès de l’utilisateur.
+          </p>
+        </div>
+      </div>
+
+      <div class="role-grid">
+
+        <label
+          *ngFor="let role of roles"
+          class="role-card"
+          [class.selected]="roleControl.value === role"
+        >
+
+          <input
+            type="radio"
+            formControlName="role"
+            [value]="role"
+          >
+
+          <span class="role-title">
+            {{ getRoleLabel(role) }}
+          </span>
+
+          <span class="role-description">
+
+            <ng-container [ngSwitch]="role">
+
+              <span *ngSwitchCase="'ADMIN'">
+                Accès complet, administration des utilisateurs et gestion
+                opérationnelle.
+              </span>
+
+              <span *ngSwitchCase="'OPERATEUR'">
+                Création et gestion des missions, satellites, simulations,
+                alertes et incidents.
+              </span>
+
+              <span *ngSwitchCase="'LECTEUR'">
+                Consultation en lecture seule des données et rapports.
+              </span>
+
+            </ng-container>
+
+          </span>
+
+        </label>
+
+      </div>
+
+    </section>
+
+    <footer class="form-actions">
+
+      <a
+        routerLink="/admin/users"
+        class="cancel-button"
+      >
+        Annuler
+      </a>
+
+      <button
+        type="submit"
+        class="submit-button"
+        [disabled]="saving"
+      >
+        {{ submitLabel }}
+      </button>
+
+    </footer>
+
+  </form>
+
+</section>

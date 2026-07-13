@@ -1,0 +1,329 @@
+:host {
+  display: block;
+}
+
+.user-form-page {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.page-header {
+  margin-bottom: 24px;
+
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.page-eyebrow {
+  margin: 0 0 8px;
+
+  color: #f59e0b;
+
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.page-header h1 {
+  margin: 0;
+
+  color: #f8fafc;
+  font-size: clamp(28px, 4vw, 40px);
+}
+
+.page-description {
+  max-width: 700px;
+  margin: 10px 0 0;
+
+  color: #94a3b8;
+  line-height: 1.6;
+}
+
+.back-link,
+.cancel-button,
+.submit-button {
+  border-radius: 10px;
+
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.back-link,
+.cancel-button {
+  padding: 10px 14px;
+
+  border: 1px solid #334155;
+
+  background: #111827;
+  color: #e2e8f0;
+}
+
+.back-link:hover,
+.cancel-button:hover {
+  background: #1e293b;
+}
+
+.message-card,
+.state-card,
+.user-form-card {
+  border: 1px solid #253047;
+  background: #0f172a;
+}
+
+.message-card {
+  margin-bottom: 18px;
+  padding: 14px 16px;
+
+  border-radius: 12px;
+}
+
+.success-message {
+  border-color: rgba(34, 197, 94, 0.45);
+  color: #86efac;
+}
+
+.error-message {
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #fca5a5;
+}
+
+.state-card {
+  padding: 32px;
+
+  border-radius: 14px;
+
+  color: #94a3b8;
+  text-align: center;
+}
+
+.user-form-card {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.form-section {
+  padding: 28px;
+
+  border-bottom: 1px solid #253047;
+}
+
+.section-heading {
+  margin-bottom: 24px;
+
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.section-number {
+  width: 40px;
+  height: 40px;
+
+  display: grid;
+  place-items: center;
+  flex: 0 0 40px;
+
+  border-radius: 12px;
+
+  background: rgba(245, 158, 11, 0.14);
+  color: #f59e0b;
+
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.section-heading h2 {
+  margin: 0;
+
+  color: #f8fafc;
+  font-size: 20px;
+}
+
+.section-heading p {
+  margin: 7px 0 0;
+
+  color: #94a3b8;
+  line-height: 1.5;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-field label {
+  color: #cbd5e1;
+
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.form-field input {
+  min-height: 46px;
+  padding: 0 14px;
+
+  border: 1px solid #334155;
+  border-radius: 10px;
+
+  background: #07101f;
+  color: #f8fafc;
+
+  outline: none;
+}
+
+.form-field input:focus {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.12);
+}
+
+.form-field input.ng-invalid.ng-touched {
+  border-color: #ef4444;
+}
+
+.field-help {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.field-error {
+  color: #fca5a5;
+  font-size: 12px;
+}
+
+.role-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.role-card {
+  min-height: 170px;
+  padding: 18px;
+
+  display: flex;
+  flex-direction: column;
+
+  border: 1px solid #334155;
+  border-radius: 14px;
+
+  background: #07101f;
+
+  cursor: pointer;
+
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    transform 150ms ease;
+}
+
+.role-card:hover {
+  transform: translateY(-2px);
+  border-color: #64748b;
+}
+
+.role-card.selected {
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.role-card input {
+  width: 16px;
+  height: 16px;
+
+  accent-color: #f59e0b;
+}
+
+.role-title {
+  margin-top: 18px;
+
+  color: #f8fafc;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.role-description {
+  margin-top: 10px;
+
+  color: #94a3b8;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.form-actions {
+  padding: 22px 28px;
+
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+
+  background: #111827;
+}
+
+.submit-button {
+  padding: 11px 18px;
+
+  border: 1px solid #f59e0b;
+
+  background: #f59e0b;
+  color: #111827;
+
+  cursor: pointer;
+}
+
+.submit-button:hover {
+  background: #fbbf24;
+}
+
+.submit-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 850px) {
+  .role-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .page-header {
+    flex-direction: column;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-section {
+    padding: 22px 18px;
+  }
+
+  .form-actions {
+    padding: 18px;
+
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .cancel-button,
+  .submit-button {
+    text-align: center;
+  }
+}

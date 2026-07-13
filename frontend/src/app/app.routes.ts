@@ -16,6 +16,10 @@ import { AlertListPageComponent } from './alerts/alert-list-page/alert-list-page
 import { IncidentListPageComponent } from './incidents/incident-list-page/incident-list-page.component';
 import { ReportPageComponent } from './reports/report-page/report-page.component';
 
+import { adminGuard } from './auth/admin.guard';
+import { UserListPageComponent } from './admin/users/user-list-page/user-list-page.component';
+import { UserFormPageComponent } from './admin/users/user-form-page/user-form-page.component';
+
 import { AppShellComponent } from './layout/app-shell/app-shell.component';
 
 export const routes: Routes = [
@@ -39,6 +43,21 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./dashboard/dashboard.component')
             .then(m => m.DashboardComponent)
+      },
+      {
+        path: 'admin/users',
+        canActivate: [adminGuard],
+        component: UserListPageComponent
+      },
+      {
+        path: 'admin/users/create',
+        canActivate: [adminGuard],
+        component: UserFormPageComponent
+      },
+      {
+        path: 'admin/users/:id/edit',
+        canActivate: [adminGuard],
+        component: UserFormPageComponent
       },
       {
         path: 'missions',
