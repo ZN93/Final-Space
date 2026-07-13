@@ -1,0 +1,316 @@
+<section class="users-page">
+
+  <header class="page-header">
+
+    <div>
+      <p class="page-eyebrow">
+        Administration
+      </p>
+
+      <h1>
+        Gestion des utilisateurs
+      </h1>
+
+      <p class="page-description">
+        Créez, modifiez, activez ou désactivez les comptes de Final Space.
+      </p>
+    </div>
+
+    <div class="page-actions">
+
+      <button
+        type="button"
+        class="secondary-button"
+        [disabled]="loading"
+        (click)="loadUsers()"
+      >
+        Actualiser
+      </button>
+
+      <a
+        routerLink="/admin/users/create"
+        class="primary-button"
+      >
+        Créer un utilisateur
+      </a>
+
+    </div>
+
+  </header>
+
+  <div
+    *ngIf="successMessage"
+    class="message-card success-message"
+    role="status"
+  >
+    {{ successMessage }}
+  </div>
+
+  <div
+    *ngIf="errorMessage"
+    class="message-card error-message"
+    role="alert"
+  >
+    {{ errorMessage }}
+  </div>
+
+  <section class="filters-card">
+
+    <div class="filter-field search-field">
+
+      <label for="user-search">
+        Rechercher
+      </label>
+
+      <input
+        id="user-search"
+        type="search"
+        placeholder="Adresse email"
+        [value]="searchTerm"
+        (input)="updateSearchTerm($event)"
+      >
+
+    </div>
+
+    <div class="filter-field">
+
+      <label for="role-filter">
+        Rôle
+      </label>
+
+      <select
+        id="role-filter"
+        [value]="roleFilter"
+        (change)="updateRoleFilter($event)"
+      >
+        <option value="ALL">
+          Tous les rôles
+        </option>
+
+        <option
+          *ngFor="let role of roles"
+          [value]="role"
+        >
+          {{ getRoleLabel(role) }}
+        </option>
+      </select>
+
+    </div>
+
+    <div class="filter-field">
+
+      <label for="status-filter">
+        Statut
+      </label>
+
+      <select
+        id="status-filter"
+        [value]="statusFilter"
+        (change)="updateStatusFilter($event)"
+      >
+        <option value="ALL">
+          Tous les statuts
+        </option>
+
+        <option value="ACTIVE">
+          Actifs
+        </option>
+
+        <option value="INACTIVE">
+          Inactifs
+        </option>
+      </select>
+
+    </div>
+
+    <button
+      type="button"
+      class="reset-button"
+      (click)="resetFilters()"
+    >
+      Réinitialiser
+    </button>
+
+  </section>
+
+  <section class="summary-row">
+
+    <article class="summary-card">
+      <span>Total</span>
+      <strong>{{ users.length }}</strong>
+    </article>
+
+    <article class="summary-card">
+      <span>Actifs</span>
+      <strong>
+        {{ activeUserCount }}
+      </strong>
+    </article>
+
+    <article class="summary-card">
+      <span>Inactifs</span>
+      <strong>
+        {{ inactiveUserCount }}
+      </strong>
+    </article>
+
+    <article class="summary-card">
+      <span>Résultats filtrés</span>
+      <strong>{{ filteredUsers.length }}</strong>
+    </article>
+
+  </section>
+
+  <div
+    *ngIf="loading"
+    class="state-card"
+  >
+    Chargement des utilisateurs...
+  </div>
+
+  <div
+    *ngIf="!loading && users.length === 0"
+    class="state-card"
+  >
+    Aucun utilisateur n’est enregistré.
+  </div>
+
+  <div
+    *ngIf="
+      !loading &&
+      users.length > 0 &&
+      filteredUsers.length === 0
+    "
+    class="state-card"
+  >
+    Aucun utilisateur ne correspond aux filtres sélectionnés.
+  </div>
+
+  <div
+    *ngIf="!loading && filteredUsers.length > 0"
+    class="table-wrapper"
+  >
+
+    <table class="users-table">
+
+      <thead>
+      <tr>
+        <th>Utilisateur</th>
+        <th>Rôle</th>
+        <th>Statut</th>
+        <th>Date de création</th>
+        <th class="actions-column">Actions</th>
+      </tr>
+      </thead>
+
+      <tbody>
+
+      <tr
+        *ngFor="
+            let user of filteredUsers;
+            trackBy: trackByUserId
+          "
+      >
+
+        <td>
+          <div class="user-identity">
+
+              <span class="user-avatar">
+                {{ user.email.charAt(0).toUpperCase() }}
+              </span>
+
+            <div>
+              <strong>
+                {{ user.email }}
+              </strong>
+
+              <small *ngIf="isCurrentUser(user)">
+                Compte actuellement connecté
+              </small>
+            </div>
+
+          </div>
+        </td>
+
+        <td>
+            <span
+              class="role-badge"
+              [class.admin-role]="user.role === 'ADMIN'"
+              [class.operator-role]="user.role === 'OPERATEUR'"
+              [class.reader-role]="user.role === 'LECTEUR'"
+            >
+              {{ getRoleLabel(user.role) }}
+            </span>
+        </td>
+
+        <td>
+            <span
+              class="status-badge"
+              [class.active-status]="user.active"
+              [class.inactive-status]="!user.active"
+            >
+              {{ user.active ? 'Actif' : 'Inactif' }}
+            </span>
+        </td>
+
+        <td>
+          {{ formatDate(user.createdAt) }}
+        </td>
+
+        <td class="actions-column">
+
+          <div class="row-actions">
+
+            <a
+              [routerLink]="[
+                  '/admin/users',
+                  user.id,
+                  'edit'
+                ]"
+              class="edit-link"
+            >
+              Modifier
+            </a>
+
+            <button
+              type="button"
+              class="status-button"
+              [class.enable-button]="!user.active"
+              [class.disable-button]="user.active"
+              [disabled]="
+                  !canChangeStatus(user) ||
+                  updatingUserId === user.id
+                "
+              [title]="
+                  !canChangeStatus(user)
+                    ? 'Vous ne pouvez pas modifier le statut de votre propre compte'
+                    : ''
+                "
+              (click)="toggleStatus(user)"
+            >
+              <ng-container
+                *ngIf="updatingUserId !== user.id"
+              >
+                {{ user.active ? 'Désactiver' : 'Activer' }}
+              </ng-container>
+
+              <ng-container
+                *ngIf="updatingUserId === user.id"
+              >
+                Traitement...
+              </ng-container>
+            </button>
+
+          </div>
+
+        </td>
+
+      </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+</section>

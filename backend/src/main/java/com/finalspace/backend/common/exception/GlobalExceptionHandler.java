@@ -9,6 +9,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.finalspace.backend.telemetry.TelemetryImportException;
 import com.finalspace.backend.telemetry.dto.TelemetryImportResponse;
 
+import com.finalspace.backend.user.UserEmailAlreadyExistsException;
+import com.finalspace.backend.user.UserNotFoundException;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -56,5 +59,23 @@ public class GlobalExceptionHandler {
                         exception.getErrors()
                 )
         );
+    }
+
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<String> handleUserNotFound(
+            UserNotFoundException exception
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(exception.getMessage());
+    }
+
+    @ExceptionHandler(UserEmailAlreadyExistsException.class)
+    public ResponseEntity<String> handleUserEmailAlreadyExists(
+            UserEmailAlreadyExistsException exception
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(exception.getMessage());
     }
 }
