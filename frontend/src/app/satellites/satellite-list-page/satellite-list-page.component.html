@@ -1,1 +1,456 @@
-<p>satellite-list-page works!</p>
+<section class="satellites-page">
+
+  <header class="page-header">
+
+    <div>
+      <p class="page-eyebrow">
+        Parc spatial
+      </p>
+
+      <h1>
+        Satellites
+      </h1>
+
+      <p class="page-description">
+        Consultez les satellites rattachés aux missions et accédez à
+        leurs données orbitales, simulations et télémétries.
+      </p>
+    </div>
+
+    <div class="page-actions">
+
+      <button
+        type="button"
+        class="secondary-button"
+        [disabled]="missionsLoading || satellitesLoading"
+        (click)="refresh()"
+      >
+        Actualiser
+      </button>
+
+      <button
+        *ngIf="canManage"
+        type="button"
+        class="primary-button"
+        [disabled]="!canCreateSatellite"
+        [title]="
+          selectedMission?.status === 'CLOTUREE'
+            ? 'Impossible de créer un satellite dans une mission clôturée'
+            : ''
+        "
+        (click)="openCreationPanel()"
+      >
+        Ajouter un satellite
+      </button>
+
+    </div>
+
+  </header>
+
+  <div
+    *ngIf="successMessage"
+    class="message-card success-message"
+    role="status"
+  >
+    {{ successMessage }}
+  </div>
+
+  <div
+    *ngIf="errorMessage"
+    class="message-card error-message"
+    role="alert"
+  >
+    {{ errorMessage }}
+  </div>
+
+  <section class="mission-selector-card">
+
+    <div class="mission-selector-heading">
+      <span class="selector-icon">M</span>
+
+      <div>
+        <h2>Sélectionner une mission</h2>
+
+        <p>
+          Les satellites sont organisés par mission.
+        </p>
+      </div>
+    </div>
+
+    <div class="mission-select-wrapper">
+
+      <label for="mission-select">
+        Mission
+      </label>
+
+      <select
+        id="mission-select"
+        [(ngModel)]="selectedMissionId"
+        [disabled]="missionsLoading || missions.length === 0"
+        (change)="onMissionChange()"
+      >
+        <option
+          *ngFor="
+            let mission of missions;
+            trackBy: trackByMissionId
+          "
+          [ngValue]="mission.id"
+        >
+          {{ mission.name }}
+          —
+          {{ mission.status === 'ACTIVE' ? 'Active' : 'Clôturée' }}
+        </option>
+      </select>
+
+    </div>
+
+  </section>
+
+  <section
+    *ngIf="creationPanelOpen"
+    class="creation-card"
+  >
+
+    <header class="creation-header">
+
+      <div>
+        <p class="page-eyebrow">
+          Nouveau satellite
+        </p>
+
+        <h2>
+          Ajouter à {{ selectedMission?.name }}
+        </h2>
+      </div>
+
+      <button
+        type="button"
+        class="close-button"
+        [disabled]="creating"
+        (click)="closeCreationPanel()"
+      >
+        Fermer
+      </button>
+
+    </header>
+
+    <div class="creation-grid">
+
+      <div class="form-field full-width">
+        <label for="satellite-name">
+          Nom
+        </label>
+
+        <input
+          id="satellite-name"
+          type="text"
+          [(ngModel)]="newSatelliteName"
+          placeholder="Ex. Asteria-1"
+        >
+      </div>
+
+      <div class="form-field">
+        <label for="satellite-mass">
+          Masse (kg)
+        </label>
+
+        <input
+          id="satellite-mass"
+          type="number"
+          min="0"
+          step="0.01"
+          [(ngModel)]="newSatelliteMassKg"
+        >
+      </div>
+
+      <div class="form-field">
+        <label for="satellite-altitude">
+          Altitude (km)
+        </label>
+
+        <input
+          id="satellite-altitude"
+          type="number"
+          min="0"
+          step="0.01"
+          [(ngModel)]="newSatelliteAltitudeKm"
+        >
+      </div>
+
+      <div class="form-field">
+        <label for="satellite-inclination">
+          Inclinaison (°)
+        </label>
+
+        <input
+          id="satellite-inclination"
+          type="number"
+          min="0"
+          max="180"
+          step="0.01"
+          [(ngModel)]="newSatelliteInclinationDeg"
+        >
+      </div>
+
+      <div class="form-field">
+        <label for="satellite-eccentricity">
+          Excentricité
+        </label>
+
+        <input
+          id="satellite-eccentricity"
+          type="number"
+          min="0"
+          max="0.999999"
+          step="0.0001"
+          [(ngModel)]="newSatelliteEccentricity"
+        >
+      </div>
+
+    </div>
+
+    <footer class="creation-actions">
+
+      <button
+        type="button"
+        class="secondary-button"
+        [disabled]="creating"
+        (click)="closeCreationPanel()"
+      >
+        Annuler
+      </button>
+
+      <button
+        type="button"
+        class="primary-button"
+        [disabled]="creating"
+        (click)="createSatellite()"
+      >
+        {{ creating ? 'Création...' : 'Créer le satellite' }}
+      </button>
+
+    </footer>
+
+  </section>
+
+  <ng-container *ngIf="selectedMission">
+
+    <section class="summary-row">
+
+      <article class="summary-card">
+        <span>Total</span>
+        <strong>{{ satellites.length }}</strong>
+      </article>
+
+      <article class="summary-card">
+        <span>Actifs</span>
+        <strong>{{ activeSatelliteCount }}</strong>
+      </article>
+
+      <article class="summary-card">
+        <span>Inactifs</span>
+        <strong>{{ inactiveSatelliteCount }}</strong>
+      </article>
+
+      <article class="summary-card">
+        <span>Mission</span>
+
+        <strong class="mission-summary-name">
+          {{ selectedMission.name }}
+        </strong>
+      </article>
+
+    </section>
+
+    <section class="filters-card">
+
+      <div class="filter-field search-field">
+
+        <label for="satellite-search">
+          Rechercher
+        </label>
+
+        <input
+          id="satellite-search"
+          type="search"
+          [(ngModel)]="searchTerm"
+          placeholder="Nom du satellite"
+        >
+
+      </div>
+
+      <div class="filter-field">
+
+        <label for="satellite-status">
+          Statut
+        </label>
+
+        <select
+          id="satellite-status"
+          [(ngModel)]="statusFilter"
+        >
+          <option value="ALL">
+            Tous les statuts
+          </option>
+
+          <option value="ACTIF">
+            Actifs
+          </option>
+
+          <option value="INACTIF">
+            Inactifs
+          </option>
+        </select>
+
+      </div>
+
+      <button
+        type="button"
+        class="reset-button"
+        (click)="resetFilters()"
+      >
+        Réinitialiser
+      </button>
+
+    </section>
+
+  </ng-container>
+
+  <div
+    *ngIf="missionsLoading"
+    class="state-card"
+  >
+    Chargement des missions...
+  </div>
+
+  <div
+    *ngIf="!missionsLoading && missions.length === 0"
+    class="state-card"
+  >
+    Aucune mission n’est disponible.
+  </div>
+
+  <div
+    *ngIf="satellitesLoading"
+    class="state-card"
+  >
+    Chargement des satellites...
+  </div>
+
+  <div
+    *ngIf="
+      !satellitesLoading &&
+      selectedMission &&
+      satellites.length === 0
+    "
+    class="state-card"
+  >
+    Aucun satellite n’est rattaché à cette mission.
+  </div>
+
+  <div
+    *ngIf="
+      !satellitesLoading &&
+      satellites.length > 0 &&
+      filteredSatellites.length === 0
+    "
+    class="state-card"
+  >
+    Aucun satellite ne correspond aux filtres sélectionnés.
+  </div>
+
+  <section
+    *ngIf="!satellitesLoading && filteredSatellites.length > 0"
+    class="satellites-grid"
+  >
+
+    <article
+      *ngFor="
+        let satellite of filteredSatellites;
+        trackBy: trackBySatelliteId
+      "
+      class="satellite-card"
+      [class.inactive-card]="satellite.status === 'INACTIF'"
+    >
+
+      <header class="satellite-card-header">
+
+        <div class="satellite-icon">
+          S
+        </div>
+
+        <span
+          class="status-badge"
+          [class.active-status]="satellite.status === 'ACTIF'"
+          [class.inactive-status]="satellite.status === 'INACTIF'"
+        >
+          {{ satellite.status === 'ACTIF' ? 'Actif' : 'Inactif' }}
+        </span>
+
+      </header>
+
+      <div class="satellite-card-body">
+
+        <p class="mission-name">
+          {{ satellite.missionName }}
+        </p>
+
+        <h2>
+          {{ satellite.name }}
+        </h2>
+
+        <dl class="satellite-data">
+
+          <div>
+            <dt>Masse</dt>
+            <dd>
+              {{ formatNumber(satellite.massKg, 'kg') }}
+            </dd>
+          </div>
+
+          <div>
+            <dt>Altitude</dt>
+            <dd>
+              {{ formatNumber(satellite.altitudeKm, 'km') }}
+            </dd>
+          </div>
+
+          <div>
+            <dt>Inclinaison</dt>
+            <dd>
+              {{ formatNumber(satellite.inclinationDeg, '°') }}
+            </dd>
+          </div>
+
+          <div>
+            <dt>Excentricité</dt>
+            <dd>
+              {{
+                satellite.eccentricity === null ||
+                satellite.eccentricity === undefined
+                  ? 'Non renseignée'
+                  : satellite.eccentricity
+              }}
+            </dd>
+          </div>
+
+        </dl>
+
+      </div>
+
+      <footer class="satellite-card-footer">
+
+        <a
+          [routerLink]="['/satellites', satellite.id]"
+          class="detail-link"
+        >
+          Ouvrir le satellite
+        </a>
+
+      </footer>
+
+    </article>
+
+  </section>
+
+</section>

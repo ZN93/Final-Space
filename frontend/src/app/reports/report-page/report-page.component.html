@@ -1,1 +1,620 @@
-<p>report-page works!</p>
+<section class="reports-page">
+
+  <header class="page-header">
+
+    <div>
+      <p class="page-eyebrow">
+        Documents et exports
+      </p>
+
+      <h1>
+        Rapports
+      </h1>
+
+      <p class="page-description">
+        Centralisez les rapports de mission, les exports de
+        télémétrie et les résultats de simulation.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="secondary-button"
+      [disabled]="
+        missionsLoading ||
+        satellitesLoading ||
+        metricsLoading ||
+        simulationsLoading ||
+        anyExportLoading
+      "
+      (click)="refresh()"
+    >
+      Actualiser
+    </button>
+
+  </header>
+
+  <div
+    *ngIf="successMessage"
+    class="message-card success-message"
+    role="status"
+  >
+    {{ successMessage }}
+  </div>
+
+  <div
+    *ngIf="errorMessage"
+    class="message-card error-message"
+    role="alert"
+  >
+    {{ errorMessage }}
+  </div>
+
+  <section class="context-card">
+
+    <div class="context-heading">
+
+      <span class="context-icon">
+        R
+      </span>
+
+      <div>
+        <h2>
+          Contexte du rapport
+        </h2>
+
+        <p>
+          Sélectionnez une mission et un satellite.
+        </p>
+      </div>
+
+    </div>
+
+    <div class="context-grid">
+
+      <div class="form-field">
+
+        <label for="mission-select">
+          Mission
+        </label>
+
+        <select
+          id="mission-select"
+          [(ngModel)]="selectedMissionId"
+          [disabled]="
+            missionsLoading ||
+            missions.length === 0
+          "
+          (change)="onMissionChange()"
+        >
+          <option
+            *ngFor="
+              let mission of missions;
+              trackBy: trackByMissionId
+            "
+            [ngValue]="mission.id"
+          >
+            {{ mission.name }}
+            —
+            {{ mission.status === 'ACTIVE' ? 'Active' : 'Clôturée' }}
+          </option>
+        </select>
+
+      </div>
+
+      <div class="form-field">
+
+        <label for="satellite-select">
+          Satellite
+        </label>
+
+        <select
+          id="satellite-select"
+          [(ngModel)]="selectedSatelliteId"
+          [disabled]="
+            satellitesLoading ||
+            satellites.length === 0
+          "
+          (change)="onSatelliteChange()"
+        >
+          <option
+            *ngFor="
+              let satellite of satellites;
+              trackBy: trackBySatelliteId
+            "
+            [ngValue]="satellite.id"
+          >
+            {{ satellite.name }}
+            —
+            {{ satellite.status === 'ACTIF' ? 'Actif' : 'Inactif' }}
+          </option>
+        </select>
+
+      </div>
+
+    </div>
+
+  </section>
+
+  <div
+    *ngIf="missionsLoading"
+    class="state-card"
+  >
+    Chargement des missions...
+  </div>
+
+  <div
+    *ngIf="!missionsLoading && missions.length === 0"
+    class="state-card"
+  >
+    Aucune mission n’est disponible.
+  </div>
+
+  <section
+    *ngIf="selectedMission"
+    class="report-section mission-report-section"
+  >
+
+    <header class="report-heading">
+
+      <div class="report-icon mission-icon">
+        M
+      </div>
+
+      <div>
+        <p class="report-category">
+          Rapport consolidé
+        </p>
+
+        <h2>
+          Rapport de mission
+        </h2>
+
+        <p>
+          Génère un document PDF regroupant les informations
+          principales de la mission sélectionnée.
+        </p>
+      </div>
+
+    </header>
+
+    <div class="report-context">
+
+      <div>
+        <span>Mission</span>
+        <strong>{{ selectedMission.name }}</strong>
+      </div>
+
+      <div>
+        <span>Statut</span>
+        <strong>
+          {{
+            selectedMission.status === 'ACTIVE'
+              ? 'Active'
+              : 'Clôturée'
+          }}
+        </strong>
+      </div>
+
+      <div>
+        <span>Satellites</span>
+        <strong>{{ satellites.length }}</strong>
+      </div>
+
+    </div>
+
+    <footer class="report-actions">
+
+      <a
+        [routerLink]="[
+          '/missions',
+          selectedMission.id,
+          'dashboard'
+        ]"
+        class="secondary-link"
+      >
+        Ouvrir la mission
+      </a>
+
+      <button
+        type="button"
+        class="primary-button"
+        [disabled]="missionExportLoading"
+        (click)="exportMissionReport()"
+      >
+        {{
+          missionExportLoading
+            ? 'Génération...'
+            : 'Télécharger le PDF'
+        }}
+      </button>
+
+    </footer>
+
+  </section>
+
+  <section
+    *ngIf="selectedSatellite"
+    class="report-section"
+  >
+
+    <header class="report-heading">
+
+      <div class="report-icon telemetry-icon">
+        T
+      </div>
+
+      <div>
+        <p class="report-category">
+          Données opérationnelles
+        </p>
+
+        <h2>
+          Rapport de télémétrie
+        </h2>
+
+        <p>
+          Exporte les mesures du satellite avec les métriques et
+          la période sélectionnées.
+        </p>
+      </div>
+
+    </header>
+
+    <div class="telemetry-filters">
+
+      <div class="form-field">
+
+        <label for="telemetry-from">
+          Date de début
+        </label>
+
+        <input
+          id="telemetry-from"
+          type="datetime-local"
+          [(ngModel)]="telemetryFrom"
+        >
+
+      </div>
+
+      <div class="form-field">
+
+        <label for="telemetry-to">
+          Date de fin
+        </label>
+
+        <input
+          id="telemetry-to"
+          type="datetime-local"
+          [(ngModel)]="telemetryTo"
+        >
+
+      </div>
+
+    </div>
+
+    <div class="metrics-block">
+
+      <header class="metrics-heading">
+
+        <div>
+          <h3>
+            Métriques
+          </h3>
+
+          <p>
+            {{ selectedMetrics.length }}
+            métrique(s) sélectionnée(s).
+          </p>
+        </div>
+
+        <div class="small-actions">
+
+          <button
+            type="button"
+            class="text-button"
+            (click)="selectAllMetrics()"
+          >
+            Tout sélectionner
+          </button>
+
+          <button
+            type="button"
+            class="text-button"
+            (click)="clearMetricSelection()"
+          >
+            Tout désélectionner
+          </button>
+
+        </div>
+
+      </header>
+
+      <div
+        *ngIf="metricsLoading"
+        class="state-inline"
+      >
+        Chargement des métriques...
+      </div>
+
+      <div
+        *ngIf="
+          !metricsLoading &&
+          availableMetrics.length === 0
+        "
+        class="state-inline"
+      >
+        Aucune métrique de télémétrie n’est disponible.
+      </div>
+
+      <div class="metrics-list">
+
+        <label
+          *ngFor="
+            let metric of availableMetrics;
+            trackBy: trackByMetric
+          "
+          class="metric-option"
+          [class.selected]="
+            isMetricSelected(metric)
+          "
+        >
+          <input
+            type="checkbox"
+            [checked]="
+              isMetricSelected(metric)
+            "
+            (change)="
+              toggleMetric(metric, $event)
+            "
+          >
+
+          <span>
+            {{ metric }}
+          </span>
+        </label>
+
+      </div>
+
+    </div>
+
+    <footer class="report-actions">
+
+      <a
+        [routerLink]="[
+          '/telemetry'
+        ]"
+        [queryParams]="{
+          missionId: selectedMissionId,
+          satelliteId: selectedSatelliteId
+        }"
+        class="secondary-link"
+      >
+        Ouvrir la télémétrie
+      </a>
+
+      <button
+        type="button"
+        class="secondary-button"
+        [disabled]="
+          telemetryCsvLoading ||
+          selectedMetrics.length === 0
+        "
+        (click)="exportTelemetry('csv')"
+      >
+        {{
+          telemetryCsvLoading
+            ? 'Génération...'
+            : 'Exporter CSV'
+        }}
+      </button>
+
+      <button
+        type="button"
+        class="primary-button"
+        [disabled]="
+          telemetryPdfLoading ||
+          selectedMetrics.length === 0
+        "
+        (click)="exportTelemetry('pdf')"
+      >
+        {{
+          telemetryPdfLoading
+            ? 'Génération...'
+            : 'Exporter PDF'
+        }}
+      </button>
+
+    </footer>
+
+  </section>
+
+  <section
+    *ngIf="selectedSatellite"
+    class="report-section"
+  >
+
+    <header class="report-heading">
+
+      <div class="report-icon simulation-icon">
+        S
+      </div>
+
+      <div>
+        <p class="report-category">
+          Résultats de calcul
+        </p>
+
+        <h2>
+          Rapport de simulation
+        </h2>
+
+        <p>
+          Sélectionnez une simulation enregistrée puis exportez ses
+          paramètres et résultats.
+        </p>
+      </div>
+
+    </header>
+
+    <div
+      *ngIf="simulationsLoading"
+      class="state-inline"
+    >
+      Chargement des simulations...
+    </div>
+
+    <div
+      *ngIf="
+        !simulationsLoading &&
+        simulations.length === 0
+      "
+      class="state-inline"
+    >
+      Aucune simulation n’est disponible pour ce satellite.
+    </div>
+
+    <div
+      *ngIf="simulations.length > 0"
+      class="simulation-selector"
+    >
+
+      <div class="form-field">
+
+        <label for="simulation-select">
+          Simulation
+        </label>
+
+        <select
+          id="simulation-select"
+          [(ngModel)]="selectedSimulationId"
+        >
+          <option
+            *ngFor="
+              let simulation of simulations;
+              trackBy: trackBySimulationId
+            "
+            [ngValue]="simulation.id"
+          >
+            #{{ simulation.id }}
+            —
+            {{ getSimulationTypeLabel(simulation.type) }}
+            —
+            {{ formatDate(simulation.createdAt) }}
+          </option>
+        </select>
+
+      </div>
+
+      <article
+        *ngIf="selectedSimulation"
+        class="simulation-preview"
+      >
+
+        <div>
+
+          <span
+            class="simulation-type-badge"
+            [class.orbit-badge]="
+              selectedSimulation.type === 'ORBIT'
+            "
+            [class.hohmann-badge]="
+              selectedSimulation.type === 'HOHMANN'
+            "
+          >
+            {{
+              getSimulationTypeLabel(
+                selectedSimulation.type
+              )
+            }}
+          </span>
+
+          <h3>
+            Simulation #{{ selectedSimulation.id }}
+          </h3>
+
+          <p>
+            {{ getSimulationSummary(selectedSimulation) }}
+          </p>
+
+        </div>
+
+        <dl>
+
+          <div>
+            <dt>Créée le</dt>
+            <dd>
+              {{ formatDate(selectedSimulation.createdAt) }}
+            </dd>
+          </div>
+
+          <div>
+            <dt>Auteur</dt>
+            <dd>
+              {{ selectedSimulation.createdBy }}
+            </dd>
+          </div>
+
+          <div>
+            <dt>Statut</dt>
+            <dd>
+              {{ selectedSimulation.status }}
+            </dd>
+          </div>
+
+        </dl>
+
+      </article>
+
+    </div>
+
+    <footer class="report-actions">
+
+      <a
+        *ngIf="selectedSimulationId"
+        [routerLink]="[
+          '/simulations',
+          selectedSimulationId
+        ]"
+        class="secondary-link"
+      >
+        Ouvrir la simulation
+      </a>
+
+      <button
+        type="button"
+        class="secondary-button"
+        [disabled]="
+          !selectedSimulationId ||
+          simulationCsvLoading
+        "
+        (click)="exportSimulation('csv')"
+      >
+        {{
+          simulationCsvLoading
+            ? 'Génération...'
+            : 'Exporter CSV'
+        }}
+      </button>
+
+      <button
+        type="button"
+        class="primary-button"
+        [disabled]="
+          !selectedSimulationId ||
+          simulationPdfLoading
+        "
+        (click)="exportSimulation('pdf')"
+      >
+        {{
+          simulationPdfLoading
+            ? 'Génération...'
+            : 'Exporter PDF'
+        }}
+      </button>
+
+    </footer>
+
+  </section>
+
+</section>

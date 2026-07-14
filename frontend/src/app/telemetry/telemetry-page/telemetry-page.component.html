@@ -1,1 +1,521 @@
-<p>telemetry-page works!</p>
+<section class="telemetry-page">
+
+  <header class="page-header">
+    <div>
+      <p class="page-eyebrow">Supervision</p>
+      <h1>Télémétrie</h1>
+
+      <p class="page-description">
+        Analysez les mesures satellitaires, visualisez les anomalies
+        et générez les rapports opérationnels.
+      </p>
+    </div>
+
+    <div class="page-actions">
+      <a
+        *ngIf="selectedSatelliteId"
+        [routerLink]="['/satellites', selectedSatelliteId]"
+        class="secondary-link"
+      >
+        Ouvrir le satellite
+      </a>
+
+      <button
+        type="button"
+        class="secondary-button"
+        [disabled]="telemetryLoading || anomaliesLoading"
+        (click)="refreshAll()"
+      >
+        Actualiser
+      </button>
+    </div>
+  </header>
+
+  <div
+    *ngIf="successMessage"
+    class="message-card success-message"
+  >
+    {{ successMessage }}
+  </div>
+
+  <div
+    *ngIf="errorMessage"
+    class="message-card error-message"
+  >
+    {{ errorMessage }}
+  </div>
+
+  <section class="context-card">
+    <div class="context-heading">
+      <span class="context-icon">T</span>
+
+      <div>
+        <h2>Contexte de télémétrie</h2>
+        <p>Sélectionnez une mission et un satellite.</p>
+      </div>
+    </div>
+
+    <div class="context-grid">
+      <div class="form-field">
+        <label for="mission-select">Mission</label>
+
+        <select
+          id="mission-select"
+          [(ngModel)]="selectedMissionId"
+          [disabled]="missionsLoading || missions.length === 0"
+          (change)="onMissionChange()"
+        >
+          <option
+            *ngFor="
+              let mission of missions;
+              trackBy: trackByMissionId
+            "
+            [ngValue]="mission.id"
+          >
+            {{ mission.name }}
+            —
+            {{ mission.status === 'ACTIVE' ? 'Active' : 'Clôturée' }}
+          </option>
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label for="satellite-select">Satellite</label>
+
+        <select
+          id="satellite-select"
+          [(ngModel)]="selectedSatelliteId"
+          [disabled]="satellitesLoading || satellites.length === 0"
+          (change)="onSatelliteChange()"
+        >
+          <option
+            *ngFor="
+              let satellite of satellites;
+              trackBy: trackBySatelliteId
+            "
+            [ngValue]="satellite.id"
+          >
+            {{ satellite.name }}
+            —
+            {{ satellite.status === 'ACTIF' ? 'Actif' : 'Inactif' }}
+          </option>
+        </select>
+      </div>
+    </div>
+  </section>
+
+  <section
+    *ngIf="selectedSatellite"
+    class="summary-row"
+  >
+    <article class="summary-card">
+      <span>Points affichés</span>
+      <strong>{{ telemetryPoints.length }}</strong>
+    </article>
+
+    <article class="summary-card">
+      <span>Métriques</span>
+      <strong>{{ availableMetrics.length }}</strong>
+    </article>
+
+    <article class="summary-card">
+      <span>Anomalies</span>
+      <strong>{{ anomalies.length }}</strong>
+    </article>
+
+    <article class="summary-card">
+      <span>Critiques</span>
+      <strong>{{ criticalAnomalyCount }}</strong>
+    </article>
+  </section>
+
+  <section
+    *ngIf="selectedSatellite"
+    class="filters-card"
+  >
+    <div class="form-field">
+      <label for="telemetry-from">Date de début</label>
+
+      <input
+        id="telemetry-from"
+        type="datetime-local"
+        [(ngModel)]="telemetryFrom"
+      >
+    </div>
+
+    <div class="form-field">
+      <label for="telemetry-to">Date de fin</label>
+
+      <input
+        id="telemetry-to"
+        type="datetime-local"
+        [(ngModel)]="telemetryTo"
+      >
+    </div>
+
+    <button
+      type="button"
+      class="primary-button"
+      [disabled]="telemetryLoading"
+      (click)="refreshAll()"
+    >
+      Appliquer
+    </button>
+  </section>
+
+  <section
+    *ngIf="selectedSatellite"
+    class="metrics-card"
+  >
+    <header class="section-header">
+      <div>
+        <h2>Métriques</h2>
+        <p>Sélectionnez les séries à afficher et exporter.</p>
+      </div>
+
+      <div class="small-actions">
+        <button
+          type="button"
+          class="text-button"
+          (click)="selectAllMetrics()"
+        >
+          Tout sélectionner
+        </button>
+
+        <button
+          type="button"
+          class="text-button"
+          (click)="clearMetricSelection()"
+        >
+          Tout désélectionner
+        </button>
+      </div>
+    </header>
+
+    <div
+      *ngIf="metricsLoading"
+      class="state-inline"
+    >
+      Chargement des métriques...
+    </div>
+
+    <div
+      *ngIf="!metricsLoading && availableMetrics.length === 0"
+      class="state-inline"
+    >
+      Aucune métrique disponible.
+    </div>
+
+    <div class="metrics-grid">
+      <label
+        *ngFor="
+          let metric of availableMetrics;
+          trackBy: trackByMetric
+        "
+        class="metric-option"
+        [class.selected]="isMetricSelected(metric)"
+      >
+        <input
+          type="checkbox"
+          [checked]="isMetricSelected(metric)"
+          (change)="toggleMetric(metric, $event)"
+        >
+
+        <span>{{ metric }}</span>
+      </label>
+    </div>
+  </section>
+
+  <section
+    *ngIf="selectedSatellite && canManage"
+    class="import-card"
+  >
+    <header class="section-header">
+      <div>
+        <h2>Importer un fichier CSV</h2>
+
+        <p>
+          L’import est autorisé uniquement sur un satellite actif
+          appartenant à une mission active.
+        </p>
+      </div>
+    </header>
+
+    <div class="import-controls">
+      <input
+        type="file"
+        accept=".csv,text/csv"
+        [disabled]="!canModifyTelemetry || importing"
+        (change)="onFileSelected($event)"
+      >
+
+      <button
+        type="button"
+        class="primary-button"
+        [disabled]="
+          !canModifyTelemetry ||
+          !selectedFile ||
+          importing
+        "
+        (click)="importCsv()"
+      >
+        {{ importing ? 'Import en cours...' : 'Importer' }}
+      </button>
+    </div>
+
+    <p
+      *ngIf="selectedFile"
+      class="selected-file"
+    >
+      Fichier sélectionné : {{ selectedFile.name }}
+    </p>
+
+    <div
+      *ngIf="importErrors.length > 0"
+      class="import-errors"
+    >
+      <h3>Erreurs détectées</h3>
+
+      <ul>
+        <li *ngFor="let error of importErrors">
+          Ligne {{ error.line }} : {{ error.message }}
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section
+    *ngIf="selectedSatellite"
+    class="chart-card"
+  >
+    <header class="section-header">
+      <div>
+        <h2>Visualisation</h2>
+
+        <p>
+          {{ telemetryPoints.length }}
+          point(s) correspondant aux filtres.
+        </p>
+      </div>
+
+      <div class="export-actions">
+        <button
+          type="button"
+          class="secondary-button"
+          [disabled]="csvExportLoading || selectedMetrics.length === 0"
+          (click)="exportReport('csv')"
+        >
+          {{ csvExportLoading ? 'Export...' : 'Exporter CSV' }}
+        </button>
+
+        <button
+          type="button"
+          class="primary-button"
+          [disabled]="pdfExportLoading || selectedMetrics.length === 0"
+          (click)="exportReport('pdf')"
+        >
+          {{ pdfExportLoading ? 'Export...' : 'Exporter PDF' }}
+        </button>
+      </div>
+    </header>
+
+    <div
+      *ngIf="telemetryLoading"
+      class="state-card"
+    >
+      Chargement des données...
+    </div>
+
+    <div
+      *ngIf="
+        !telemetryLoading &&
+        selectedMetrics.length > 0 &&
+        telemetryPoints.length === 0
+      "
+      class="state-card"
+    >
+      Aucune donnée ne correspond aux filtres sélectionnés.
+    </div>
+
+    <div
+      *ngIf="!telemetryLoading && chartSeries.length > 0"
+      class="chart-wrapper"
+    >
+      <svg
+        [attr.viewBox]="
+          '0 0 ' + chartWidth + ' ' + chartHeight
+        "
+        class="telemetry-chart"
+        role="img"
+        aria-label="Graphique de télémétrie"
+      >
+        <line
+          [attr.x1]="chartPadding"
+          [attr.y1]="chartHeight - chartPadding"
+          [attr.x2]="chartWidth - chartPadding"
+          [attr.y2]="chartHeight - chartPadding"
+          class="chart-axis"
+        ></line>
+
+        <line
+          [attr.x1]="chartPadding"
+          [attr.y1]="chartPadding"
+          [attr.x2]="chartPadding"
+          [attr.y2]="chartHeight - chartPadding"
+          class="chart-axis"
+        ></line>
+
+        <g
+          *ngFor="
+            let series of chartSeries;
+            let seriesIndex = index
+          "
+        >
+          <path
+            [attr.d]="series.path"
+            fill="none"
+            [attr.stroke]="getSeriesStroke(seriesIndex)"
+            class="chart-line"
+          ></path>
+
+          <circle
+            *ngFor="let point of series.points"
+            [attr.cx]="point.x"
+            [attr.cy]="point.y"
+            r="3"
+            [attr.fill]="getSeriesStroke(seriesIndex)"
+          >
+            <title>
+              {{ series.metric }} :
+              {{ point.value }}
+              —
+              {{ formatDate(point.timestamp) }}
+            </title>
+          </circle>
+        </g>
+      </svg>
+
+      <div class="chart-legend">
+        <span
+          *ngFor="
+            let series of chartSeries;
+            let seriesIndex = index
+          "
+        >
+          <i
+            [style.background]="getSeriesStroke(seriesIndex)"
+          ></i>
+
+          {{ series.metric }}
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <section
+    *ngIf="selectedSatellite"
+    class="anomalies-card"
+  >
+    <header class="section-header">
+      <div>
+        <h2>Anomalies</h2>
+
+        <p>
+          Dépassements de seuil, variations et données manquantes.
+        </p>
+      </div>
+
+      <button
+        *ngIf="canManage"
+        type="button"
+        class="primary-button"
+        [disabled]="
+          !canModifyTelemetry ||
+          anomalyDetecting ||
+          selectedMetrics.length === 0
+        "
+        (click)="detectAnomalies()"
+      >
+        {{
+          anomalyDetecting
+            ? 'Détection en cours...'
+            : 'Détecter les anomalies'
+        }}
+      </button>
+    </header>
+
+    <div class="anomaly-summary">
+      <span>Faibles : {{ lowAnomalyCount }}</span>
+      <span>Moyennes : {{ mediumAnomalyCount }}</span>
+      <span>Élevées : {{ criticalAnomalyCount }}</span>
+    </div>
+
+    <div
+      *ngIf="anomaliesLoading"
+      class="state-card"
+    >
+      Chargement des anomalies...
+    </div>
+
+    <div
+      *ngIf="!anomaliesLoading && anomalies.length === 0"
+      class="state-card"
+    >
+      Aucune anomalie détectée.
+    </div>
+
+    <div
+      *ngIf="!anomaliesLoading && anomalies.length > 0"
+      class="anomalies-list"
+    >
+      <article
+        *ngFor="
+          let anomaly of anomalies;
+          trackBy: trackByAnomalyId
+        "
+        class="anomaly-card"
+      >
+        <div>
+          <div class="anomaly-badges">
+            <span
+              class="type-badge"
+            >
+              {{ getAnomalyTypeLabel(anomaly.type) }}
+            </span>
+
+            <span
+              class="severity-badge"
+              [class.low-severity]="anomaly.severity === 'FAIBLE'"
+              [class.medium-severity]="anomaly.severity === 'MOYENNE'"
+              [class.high-severity]="anomaly.severity === 'ELEVEE'"
+            >
+              {{ getSeverityLabel(anomaly.severity) }}
+            </span>
+          </div>
+
+          <h3>{{ anomaly.metric }}</h3>
+
+          <p>{{ anomaly.message }}</p>
+        </div>
+
+        <dl>
+          <div>
+            <dt>Valeur</dt>
+            <dd>{{ anomaly.value }}</dd>
+          </div>
+
+          <div>
+            <dt>Date</dt>
+            <dd>{{ formatDate(anomaly.timestamp) }}</dd>
+          </div>
+
+          <div>
+            <dt>Règle</dt>
+            <dd>{{ anomaly.ruleName }}</dd>
+          </div>
+        </dl>
+      </article>
+    </div>
+  </section>
+
+</section>
