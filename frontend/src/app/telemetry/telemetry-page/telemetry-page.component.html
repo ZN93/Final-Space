@@ -242,21 +242,29 @@
     </header>
 
     <div class="import-controls">
-      <input
-        type="file"
-        accept=".csv,text/csv"
-        [disabled]="!canModifyTelemetry || importing"
-        (change)="onFileSelected($event)"
-      >
+
+      <div class="file-field">
+        <label for="telemetry-file">
+          Fichier CSV
+        </label>
+
+        <input
+          id="telemetry-file"
+          type="file"
+          accept=".csv,text/csv"
+          [disabled]="!canModifyTelemetry || importing"
+          (change)="onFileSelected($event)"
+        >
+      </div>
 
       <button
         type="button"
         class="primary-button"
         [disabled]="
-          !canModifyTelemetry ||
-          !selectedFile ||
-          importing
-        "
+      !canModifyTelemetry ||
+      !selectedFile ||
+      importing
+    "
         (click)="importCsv()"
       >
         {{ importing ? 'Import en cours...' : 'Importer' }}
