@@ -6,10 +6,10 @@
     <p class="nav-section-title">Navigation</p>
 
     <a
-      *ngFor="let item of items"
+      *ngFor="let item of visibleItems"
       [routerLink]="item.route"
       routerLinkActive="active"
-      [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' }"
+      [routerLinkActiveOptions]="{ exact: item.exact ?? false }"
       class="nav-item"
     >
       <span class="nav-icon">{{ item.icon }}</span>
