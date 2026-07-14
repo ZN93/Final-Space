@@ -231,6 +231,7 @@ export class ReportPageComponent implements OnInit {
       });
   }
 
+
   loadSimulations(satelliteId: number): void {
     this.simulationsLoading = true;
 
@@ -366,6 +367,14 @@ export class ReportPageComponent implements OnInit {
     if (this.selectedMetrics.length === 0) {
       this.errorMessage =
         'Sélectionne au moins une métrique.';
+      return;
+    }
+
+    if (
+      this.hasInvalidDate(this.telemetryFrom) ||
+      this.hasInvalidDate(this.telemetryTo)
+    ) {
+      this.errorMessage = 'La période contient une date invalide.';
       return;
     }
 
@@ -656,7 +665,14 @@ export class ReportPageComponent implements OnInit {
       return null;
     }
 
-    return new Date(value).toISOString();
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      this.errorMessage = 'La date saisie est invalide.';
+      return null;
+    }
+
+    return date.toISOString();
   }
 
   private isDateRangeValid(
@@ -676,6 +692,14 @@ export class ReportPageComponent implements OnInit {
     }
 
     return true;
+  }
+
+  private hasInvalidDate(value: string): boolean {
+    if (!value) {
+      return false;
+    }
+
+    return Number.isNaN(new Date(value).getTime());
   }
 
   private handleError(

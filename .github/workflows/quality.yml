@@ -70,6 +70,15 @@ jobs:
         working-directory: frontend
         run: npm run build
 
+      - name: Frontend - tests and coverage
+        working-directory: frontend
+        run: npx ng test --watch=false --code-coverage --browsers=ChromeHeadless
+
+      - name: Frontend - verify LCOV report
+        run: |
+          test -f frontend/coverage/frontend/lcov.info
+          ls -lh frontend/coverage/frontend/lcov.info
+
       - name: SonarQube Cloud scan
         uses: SonarSource/sonarqube-scan-action@v6
         env:
