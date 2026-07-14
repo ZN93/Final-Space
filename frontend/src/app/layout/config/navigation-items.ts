@@ -1,60 +1,76 @@
 import { NavigationItem } from '../models/navigation-item.model';
 
+function navigationItem(
+  label: string,
+  description: string,
+  route: string,
+  icon: string,
+  options: Pick<NavigationItem, 'exact' | 'adminOnly'> = {}
+): NavigationItem {
+  return {
+    label,
+    description,
+    route,
+    icon,
+    ...options
+  };
+}
+
 export const NAVIGATION_ITEMS: ReadonlyArray<NavigationItem> = [
-  {
-    label: 'Vue générale',
-    description: 'Synthèse opérationnelle',
-    route: '/dashboard',
-    icon: '⌂',
-    exact: true
-  },
-  {
-    label: 'Missions',
-    description: 'Créer, consulter et superviser les missions spatiales.',
-    route: '/missions',
-    icon: 'M'
-  },
-  {
-    label: 'Satellites',
-    description: 'Consulter et gérer les satellites rattachés aux missions.',
-    route: '/satellites',
-    icon: 'S'
-  },
-  {
-    label: 'Simulations',
-    description: 'Consulter les simulations orbitales et les transferts de Hohmann.',
-    route: '/simulations',
-    icon: 'SIM'
-  },
-  {
-    label: 'Télémétrie',
-    description: 'Importer, visualiser et analyser les données de télémétrie.',
-    route: '/telemetry',
-    icon: 'T'
-  },
-  {
-    label: 'Alertes',
-    description: 'Consulter et acquitter les alertes opérationnelles.',
-    route: '/alerts',
-    icon: 'A'
-  },
-  {
-    label: 'Incidents',
-    description: 'Créer, suivre et clôturer les incidents de mission.',
-    route: '/incidents',
-    icon: 'I'
-  },
-  {
-    label: 'Rapports',
-    description: 'Générer les rapports de mission, simulation et télémétrie.',
-    route: '/reports',
-    icon: 'R'
-  },
-  {
-    label: 'Utilisateurs',
-    description: 'Administrer les comptes et leurs rôles.',
-    route: '/admin/users',
-    icon: 'U',
-    adminOnly: true
-  }
+  navigationItem(
+    'Vue générale',
+    'Synthèse opérationnelle',
+    '/dashboard',
+    '⌂',
+    { exact: true }
+  ),
+  navigationItem(
+    'Missions',
+    'Créer, consulter et superviser les missions spatiales.',
+    '/missions',
+    'M'
+  ),
+  navigationItem(
+    'Satellites',
+    'Consulter et gérer les satellites rattachés aux missions.',
+    '/satellites',
+    'S'
+  ),
+  navigationItem(
+    'Simulations',
+    'Consulter les simulations orbitales et les transferts de Hohmann.',
+    '/simulations',
+    'SIM'
+  ),
+  navigationItem(
+    'Télémétrie',
+    'Importer, visualiser et analyser les données de télémétrie.',
+    '/telemetry',
+    'T'
+  ),
+  navigationItem(
+    'Alertes',
+    'Consulter et acquitter les alertes opérationnelles.',
+    '/alerts',
+    'A'
+  ),
+  navigationItem(
+    'Incidents',
+    'Créer, suivre et clôturer les incidents de mission.',
+    '/incidents',
+    'I'
+  ),
+  navigationItem(
+    'Rapports',
+    'Générer les rapports de mission, simulation et télémétrie.',
+    '/reports',
+    'R'
+  ),
+  navigationItem(
+    'Utilisateurs',
+    'Administrer les comptes et leurs rôles.',
+    '/admin/users',
+    'U',
+    { adminOnly: true }
+  )
 ];
