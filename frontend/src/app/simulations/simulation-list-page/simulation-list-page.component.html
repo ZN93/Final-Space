@@ -1,1 +1,539 @@
-<p>simulation-list-page works!</p>
+<section class="simulations-page">
+
+  <header class="page-header">
+
+    <div>
+      <p class="page-eyebrow">
+        Analyse orbitale
+      </p>
+
+      <h1>
+        Simulations
+      </h1>
+
+      <p class="page-description">
+        Consultez l’historique des calculs orbitaux et lancez de
+        nouvelles simulations pour les satellites actifs.
+      </p>
+    </div>
+
+    <div class="page-actions">
+
+      <button
+        type="button"
+        class="secondary-button"
+        [disabled]="
+          missionsLoading ||
+          satellitesLoading ||
+          simulationsLoading
+        "
+        (click)="refresh()"
+      >
+        Actualiser
+      </button>
+
+      <button
+        *ngIf="canManage"
+        type="button"
+        class="primary-button"
+        [disabled]="!canLaunchSimulation"
+        (click)="openLaunchPanel('ORBIT')"
+      >
+        Simulation orbitale
+      </button>
+
+      <button
+        *ngIf="canManage"
+        type="button"
+        class="primary-button outline-button"
+        [disabled]="!canLaunchSimulation"
+        (click)="openLaunchPanel('HOHMANN')"
+      >
+        Transfert de Hohmann
+      </button>
+
+    </div>
+
+  </header>
+
+  <div
+    *ngIf="successMessage"
+    class="message-card success-message"
+    role="status"
+  >
+    {{ successMessage }}
+  </div>
+
+  <div
+    *ngIf="errorMessage"
+    class="message-card error-message"
+    role="alert"
+  >
+    {{ errorMessage }}
+  </div>
+
+  <section class="selection-card">
+
+    <div class="selection-heading">
+
+      <span class="selection-icon">
+        S
+      </span>
+
+      <div>
+        <h2>
+          Contexte de simulation
+        </h2>
+
+        <p>
+          Sélectionnez une mission puis un satellite.
+        </p>
+      </div>
+
+    </div>
+
+    <div class="selection-grid">
+
+      <div class="form-field">
+
+        <label for="mission-select">
+          Mission
+        </label>
+
+        <select
+          id="mission-select"
+          [(ngModel)]="selectedMissionId"
+          [disabled]="missionsLoading || missions.length === 0"
+          (change)="onMissionChange()"
+        >
+          <option
+            *ngFor="
+              let mission of missions;
+              trackBy: trackByMissionId
+            "
+            [ngValue]="mission.id"
+          >
+            {{ mission.name }}
+            —
+            {{ mission.status === 'ACTIVE' ? 'Active' : 'Clôturée' }}
+          </option>
+        </select>
+
+      </div>
+
+      <div class="form-field">
+
+        <label for="satellite-select">
+          Satellite
+        </label>
+
+        <select
+          id="satellite-select"
+          [(ngModel)]="selectedSatelliteId"
+          [disabled]="
+            satellitesLoading ||
+            satellites.length === 0
+          "
+          (change)="onSatelliteChange()"
+        >
+          <option
+            *ngFor="
+              let satellite of satellites;
+              trackBy: trackBySatelliteId
+            "
+            [ngValue]="satellite.id"
+          >
+            {{ satellite.name }}
+            —
+            {{ satellite.status === 'ACTIF' ? 'Actif' : 'Inactif' }}
+          </option>
+        </select>
+
+      </div>
+
+    </div>
+
+  </section>
+
+  <section
+    *ngIf="launchPanelOpen"
+    class="launch-card"
+  >
+
+    <header class="launch-header">
+
+      <div>
+        <p class="page-eyebrow">
+          Nouvelle simulation
+        </p>
+
+        <h2>
+          {{ getTypeLabel(selectedLaunchType) }}
+        </h2>
+
+        <p>
+          Satellite :
+          <strong>{{ selectedSatellite?.name }}</strong>
+        </p>
+      </div>
+
+      <button
+        type="button"
+        class="close-button"
+        [disabled]="launchInProgress"
+        (click)="closeLaunchPanel()"
+      >
+        Fermer
+      </button>
+
+    </header>
+
+    <div class="launch-context">
+
+      <div>
+        <span>Mission</span>
+        <strong>{{ selectedMission?.name }}</strong>
+      </div>
+
+      <div>
+        <span>Satellite</span>
+        <strong>{{ selectedSatellite?.name }}</strong>
+      </div>
+
+      <div>
+        <span>Altitude actuelle</span>
+        <strong>
+          {{
+            selectedSatellite?.altitudeKm === null ||
+            selectedSatellite?.altitudeKm === undefined
+              ? 'Non renseignée'
+              : selectedSatellite?.altitudeKm + ' km'
+          }}
+        </strong>
+      </div>
+
+      <div>
+        <span>Statut</span>
+        <strong>{{ selectedSatellite?.status }}</strong>
+      </div>
+
+    </div>
+
+    <div
+      *ngIf="selectedLaunchType === 'HOHMANN'"
+      class="form-field target-field"
+    >
+
+      <label for="target-altitude">
+        Altitude cible (km)
+      </label>
+
+      <input
+        id="target-altitude"
+        type="number"
+        min="0"
+        step="0.01"
+        [(ngModel)]="targetAltitudeKm"
+        placeholder="Ex. 800"
+      >
+
+    </div>
+
+    <p
+      *ngIf="selectedLaunchType === 'ORBIT'"
+      class="launch-information"
+    >
+      La simulation utilisera les paramètres orbitaux actuellement
+      enregistrés pour le satellite.
+    </p>
+
+    <footer class="launch-actions">
+
+      <button
+        type="button"
+        class="secondary-button"
+        [disabled]="launchInProgress"
+        (click)="closeLaunchPanel()"
+      >
+        Annuler
+      </button>
+
+      <button
+        type="button"
+        class="primary-button"
+        [disabled]="launchInProgress"
+        (click)="launchSimulation()"
+      >
+        {{
+          launchInProgress
+            ? 'Calcul en cours...'
+            : 'Lancer la simulation'
+        }}
+      </button>
+
+    </footer>
+
+  </section>
+
+  <section
+    *ngIf="selectedSatellite"
+    class="summary-row"
+  >
+
+    <article class="summary-card">
+      <span>Total</span>
+      <strong>{{ simulations.length }}</strong>
+    </article>
+
+    <article class="summary-card">
+      <span>Réussies</span>
+      <strong>{{ successCount }}</strong>
+    </article>
+
+    <article class="summary-card">
+      <span>Orbitales</span>
+      <strong>{{ orbitCount }}</strong>
+    </article>
+
+    <article class="summary-card">
+      <span>Hohmann</span>
+      <strong>{{ hohmannCount }}</strong>
+    </article>
+
+  </section>
+
+  <section
+    *ngIf="selectedSatellite"
+    class="filters-card"
+  >
+
+    <div class="form-field search-field">
+
+      <label for="simulation-search">
+        Rechercher
+      </label>
+
+      <input
+        id="simulation-search"
+        type="search"
+        [(ngModel)]="searchTerm"
+        placeholder="Satellite ou auteur"
+      >
+
+    </div>
+
+    <div class="form-field">
+
+      <label for="type-filter">
+        Type
+      </label>
+
+      <select
+        id="type-filter"
+        [(ngModel)]="typeFilter"
+      >
+        <option value="ALL">
+          Tous les types
+        </option>
+
+        <option value="ORBIT">
+          Simulation orbitale
+        </option>
+
+        <option value="HOHMANN">
+          Transfert de Hohmann
+        </option>
+      </select>
+
+    </div>
+
+    <div class="form-field">
+
+      <label for="status-filter">
+        Statut
+      </label>
+
+      <select
+        id="status-filter"
+        [(ngModel)]="statusFilter"
+      >
+        <option value="ALL">
+          Tous les statuts
+        </option>
+
+        <option value="SUCCESS">
+          Réussies
+        </option>
+
+        <option value="FAILED">
+          Échouées
+        </option>
+      </select>
+
+    </div>
+
+    <button
+      type="button"
+      class="reset-button"
+      (click)="resetFilters()"
+    >
+      Réinitialiser
+    </button>
+
+  </section>
+
+  <div
+    *ngIf="missionsLoading"
+    class="state-card"
+  >
+    Chargement des missions...
+  </div>
+
+  <div
+    *ngIf="!missionsLoading && missions.length === 0"
+    class="state-card"
+  >
+    Aucune mission n’est disponible.
+  </div>
+
+  <div
+    *ngIf="satellitesLoading"
+    class="state-card"
+  >
+    Chargement des satellites...
+  </div>
+
+  <div
+    *ngIf="
+      !satellitesLoading &&
+      selectedMission &&
+      satellites.length === 0
+    "
+    class="state-card"
+  >
+    Aucun satellite n’est rattaché à cette mission.
+  </div>
+
+  <div
+    *ngIf="simulationsLoading"
+    class="state-card"
+  >
+    Chargement des simulations...
+  </div>
+
+  <div
+    *ngIf="
+      !simulationsLoading &&
+      selectedSatellite &&
+      simulations.length === 0
+    "
+    class="state-card"
+  >
+    Aucune simulation n’a encore été lancée pour ce satellite.
+  </div>
+
+  <div
+    *ngIf="
+      !simulationsLoading &&
+      simulations.length > 0 &&
+      filteredSimulations.length === 0
+    "
+    class="state-card"
+  >
+    Aucune simulation ne correspond aux filtres sélectionnés.
+  </div>
+
+  <section
+    *ngIf="
+      !simulationsLoading &&
+      filteredSimulations.length > 0
+    "
+    class="simulations-list"
+  >
+
+    <article
+      *ngFor="
+        let simulation of filteredSimulations;
+        trackBy: trackBySimulationId
+      "
+      class="simulation-card"
+    >
+
+      <div
+        class="simulation-type-icon"
+        [class.orbit-icon]="simulation.type === 'ORBIT'"
+        [class.hohmann-icon]="simulation.type === 'HOHMANN'"
+      >
+        {{ simulation.type === 'ORBIT' ? 'O' : 'H' }}
+      </div>
+
+      <div class="simulation-content">
+
+        <header class="simulation-heading">
+
+          <div>
+            <p class="simulation-id">
+              Simulation #{{ simulation.id }}
+            </p>
+
+            <h2>
+              {{ getTypeLabel(simulation.type) }}
+            </h2>
+          </div>
+
+          <span
+            class="status-badge"
+            [class.success-status]="simulation.status === 'SUCCESS'"
+            [class.failed-status]="simulation.status === 'FAILED'"
+          >
+            {{ getStatusLabel(simulation.status) }}
+          </span>
+
+        </header>
+
+        <div class="simulation-metadata">
+
+          <span>
+            <strong>Satellite :</strong>
+            {{ simulation.satelliteName }}
+          </span>
+
+          <span>
+            <strong>Mission :</strong>
+            {{ simulation.missionName }}
+          </span>
+
+          <span>
+            <strong>Auteur :</strong>
+            {{ simulation.createdBy }}
+          </span>
+
+          <span>
+            <strong>Date :</strong>
+            {{ formatDate(simulation.createdAt) }}
+          </span>
+
+        </div>
+
+        <p class="simulation-summary">
+          {{ getSimulationSummary(simulation) }}
+        </p>
+
+      </div>
+
+      <div class="simulation-actions">
+
+        <a
+          [routerLink]="['/simulations', simulation.id]"
+          class="detail-link"
+        >
+          Voir le détail
+        </a>
+
+      </div>
+
+    </article>
+
+  </section>
+
+</section>

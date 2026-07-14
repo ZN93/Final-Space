@@ -1,1 +1,758 @@
-<p>incident-list-page works!</p>
+<section class="incidents-page">
+
+  <header class="page-header">
+
+    <div>
+      <p class="page-eyebrow">
+        Suivi opérationnel
+      </p>
+
+      <h1>
+        Incidents
+      </h1>
+
+      <p class="page-description">
+        Créez, suivez et clôturez les incidents rencontrés pendant
+        l’exploitation des missions spatiales.
+      </p>
+    </div>
+
+    <div class="page-actions">
+
+      <a
+        *ngIf="selectedMissionId"
+        [routerLink]="[
+          '/missions',
+          selectedMissionId,
+          'dashboard'
+        ]"
+        class="secondary-link"
+      >
+        Dashboard mission
+      </a>
+
+      <button
+        type="button"
+        class="secondary-button"
+        [disabled]="missionsLoading || incidentsLoading"
+        (click)="refresh()"
+      >
+        Actualiser
+      </button>
+
+      <button
+        *ngIf="canManage"
+        type="button"
+        class="primary-button"
+        [disabled]="!canCreateIncident"
+        [title]="
+          selectedMission?.status === 'CLOTUREE'
+            ? 'Impossible de créer un incident dans une mission clôturée'
+            : ''
+        "
+        (click)="openCreationPanel()"
+      >
+        Créer un incident
+      </button>
+
+    </div>
+
+  </header>
+
+  <div
+    *ngIf="successMessage"
+    class="message-card success-message"
+    role="status"
+  >
+    {{ successMessage }}
+  </div>
+
+  <div
+    *ngIf="errorMessage"
+    class="message-card error-message"
+    role="alert"
+  >
+    {{ errorMessage }}
+  </div>
+
+  <section class="mission-card">
+
+    <div class="mission-heading">
+
+      <span class="mission-icon">
+        I
+      </span>
+
+      <div>
+        <h2>
+          Mission concernée
+        </h2>
+
+        <p>
+          Les incidents sont regroupés par mission.
+        </p>
+      </div>
+
+    </div>
+
+    <div class="form-field mission-select">
+
+      <label for="mission-select">
+        Mission
+      </label>
+
+      <select
+        id="mission-select"
+        [(ngModel)]="selectedMissionId"
+        [disabled]="missionsLoading || missions.length === 0"
+        (change)="onMissionChange()"
+      >
+        <option
+          *ngFor="
+            let mission of missions;
+            trackBy: trackByMissionId
+          "
+          [ngValue]="mission.id"
+        >
+          {{ mission.name }}
+          —
+          {{ mission.status === 'ACTIVE' ? 'Active' : 'Clôturée' }}
+        </option>
+      </select>
+
+    </div>
+
+  </section>
+
+  <div
+    *ngIf="selectedMission?.status === 'CLOTUREE'"
+    class="information-card"
+  >
+    Cette mission est clôturée. Ses incidents restent consultables,
+    mais ils ne peuvent plus être créés ou modifiés.
+  </div>
+
+  <section
+    *ngIf="creationPanelOpen"
+    class="form-card"
+  >
+
+    <header class="form-header">
+
+      <div>
+        <p class="page-eyebrow">
+          Nouvel incident
+        </p>
+
+        <h2>
+          Créer un incident
+        </h2>
+      </div>
+
+      <button
+        type="button"
+        class="close-button"
+        [disabled]="saving"
+        (click)="closeCreationPanel()"
+      >
+        Fermer
+      </button>
+
+    </header>
+
+    <div class="form-grid">
+
+      <div class="form-field full-width">
+
+        <label for="create-title">
+          Titre *
+        </label>
+
+        <input
+          id="create-title"
+          type="text"
+          maxlength="150"
+          [(ngModel)]="createTitle"
+          placeholder="Ex. Perte temporaire du signal"
+        >
+
+      </div>
+
+      <div class="form-field">
+
+        <label for="create-severity">
+          Gravité
+        </label>
+
+        <select
+          id="create-severity"
+          [(ngModel)]="createSeverity"
+        >
+          <option value="FAIBLE">
+            Faible
+          </option>
+
+          <option value="MOYENNE">
+            Moyenne
+          </option>
+
+          <option value="ELEVEE">
+            Élevée
+          </option>
+        </select>
+
+      </div>
+
+      <div class="form-field">
+
+        <label for="create-satellite">
+          Satellite concerné
+        </label>
+
+        <select
+          id="create-satellite"
+          [(ngModel)]="createSatelliteId"
+          [disabled]="satellitesLoading"
+        >
+          <option [ngValue]="null">
+            Incident général à la mission
+          </option>
+
+          <option
+            *ngFor="
+              let satellite of satellites;
+              trackBy: trackBySatelliteId
+            "
+            [ngValue]="satellite.id"
+          >
+            {{ satellite.name }}
+            —
+            {{ satellite.status === 'ACTIF' ? 'Actif' : 'Inactif' }}
+          </option>
+        </select>
+
+      </div>
+
+      <div class="form-field full-width">
+
+        <label for="create-description">
+          Description
+        </label>
+
+        <textarea
+          id="create-description"
+          rows="4"
+          [(ngModel)]="createDescription"
+          placeholder="Décrivez les symptômes et le contexte..."
+        ></textarea>
+
+      </div>
+
+      <div class="form-field full-width">
+
+        <label for="create-notes">
+          Notes de suivi
+        </label>
+
+        <textarea
+          id="create-notes"
+          rows="3"
+          [(ngModel)]="createNotes"
+          placeholder="Premières actions menées..."
+        ></textarea>
+
+      </div>
+
+    </div>
+
+    <footer class="form-actions">
+
+      <button
+        type="button"
+        class="secondary-button"
+        [disabled]="saving"
+        (click)="closeCreationPanel()"
+      >
+        Annuler
+      </button>
+
+      <button
+        type="button"
+        class="primary-button"
+        [disabled]="saving"
+        (click)="createIncident()"
+      >
+        {{ saving ? 'Création...' : 'Créer l’incident' }}
+      </button>
+
+    </footer>
+
+  </section>
+
+  <section
+    *ngIf="editingIncident"
+    class="form-card"
+  >
+
+    <header class="form-header">
+
+      <div>
+        <p class="page-eyebrow">
+          Incident #{{ editingIncident.id }}
+        </p>
+
+        <h2>
+          Modifier l’incident
+        </h2>
+      </div>
+
+      <button
+        type="button"
+        class="close-button"
+        [disabled]="saving"
+        (click)="cancelEditIncident()"
+      >
+        Fermer
+      </button>
+
+    </header>
+
+    <div class="form-grid">
+
+      <div class="form-field full-width">
+
+        <label for="edit-title">
+          Titre *
+        </label>
+
+        <input
+          id="edit-title"
+          type="text"
+          maxlength="150"
+          [(ngModel)]="editTitle"
+        >
+
+      </div>
+
+      <div class="form-field">
+
+        <label for="edit-severity">
+          Gravité
+        </label>
+
+        <select
+          id="edit-severity"
+          [(ngModel)]="editSeverity"
+        >
+          <option value="FAIBLE">
+            Faible
+          </option>
+
+          <option value="MOYENNE">
+            Moyenne
+          </option>
+
+          <option value="ELEVEE">
+            Élevée
+          </option>
+        </select>
+
+      </div>
+
+      <div class="form-field full-width">
+
+        <label for="edit-description">
+          Description
+        </label>
+
+        <textarea
+          id="edit-description"
+          rows="4"
+          [(ngModel)]="editDescription"
+        ></textarea>
+
+      </div>
+
+      <div class="form-field full-width">
+
+        <label for="edit-notes">
+          Notes de suivi
+        </label>
+
+        <textarea
+          id="edit-notes"
+          rows="3"
+          [(ngModel)]="editNotes"
+        ></textarea>
+
+      </div>
+
+    </div>
+
+    <footer class="form-actions">
+
+      <button
+        type="button"
+        class="secondary-button"
+        [disabled]="saving"
+        (click)="cancelEditIncident()"
+      >
+        Annuler
+      </button>
+
+      <button
+        type="button"
+        class="primary-button"
+        [disabled]="saving"
+        (click)="updateIncident()"
+      >
+        {{ saving ? 'Modification...' : 'Enregistrer' }}
+      </button>
+
+    </footer>
+
+  </section>
+
+  <section
+    *ngIf="selectedMission"
+    class="summary-row"
+  >
+
+    <article class="summary-card">
+      <span>Total</span>
+      <strong>{{ incidents.length }}</strong>
+    </article>
+
+    <article class="summary-card">
+      <span>Ouverts</span>
+      <strong>{{ openIncidentCount }}</strong>
+    </article>
+
+    <article class="summary-card">
+      <span>En cours</span>
+      <strong>{{ inProgressIncidentCount }}</strong>
+    </article>
+
+    <article class="summary-card">
+      <span>Clôturés</span>
+      <strong>{{ closedIncidentCount }}</strong>
+    </article>
+
+  </section>
+
+  <section
+    *ngIf="selectedMission"
+    class="filters-card"
+  >
+
+    <div class="form-field search-field">
+
+      <label for="incident-search">
+        Rechercher
+      </label>
+
+      <input
+        id="incident-search"
+        type="search"
+        [(ngModel)]="searchTerm"
+        placeholder="Titre, description, satellite ou auteur"
+      >
+
+    </div>
+
+    <div class="form-field">
+
+      <label for="status-filter">
+        Statut
+      </label>
+
+      <select
+        id="status-filter"
+        [(ngModel)]="statusFilter"
+      >
+        <option value="ALL">
+          Tous les statuts
+        </option>
+
+        <option value="OUVERT">
+          Ouverts
+        </option>
+
+        <option value="EN_COURS">
+          En cours
+        </option>
+
+        <option value="CLOTURE">
+          Clôturés
+        </option>
+      </select>
+
+    </div>
+
+    <div class="form-field">
+
+      <label for="severity-filter">
+        Gravité
+      </label>
+
+      <select
+        id="severity-filter"
+        [(ngModel)]="severityFilter"
+      >
+        <option value="ALL">
+          Toutes les gravités
+        </option>
+
+        <option value="FAIBLE">
+          Faible
+        </option>
+
+        <option value="MOYENNE">
+          Moyenne
+        </option>
+
+        <option value="ELEVEE">
+          Élevée
+        </option>
+      </select>
+
+    </div>
+
+    <button
+      type="button"
+      class="reset-button"
+      (click)="resetFilters()"
+    >
+      Réinitialiser
+    </button>
+
+  </section>
+
+  <div
+    *ngIf="missionsLoading"
+    class="state-card"
+  >
+    Chargement des missions...
+  </div>
+
+  <div
+    *ngIf="!missionsLoading && missions.length === 0"
+    class="state-card"
+  >
+    Aucune mission n’est disponible.
+  </div>
+
+  <div
+    *ngIf="incidentsLoading"
+    class="state-card"
+  >
+    Chargement des incidents...
+  </div>
+
+  <div
+    *ngIf="
+      !incidentsLoading &&
+      selectedMission &&
+      incidents.length === 0
+    "
+    class="state-card"
+  >
+    Aucun incident n’est associé à cette mission.
+  </div>
+
+  <div
+    *ngIf="
+      !incidentsLoading &&
+      incidents.length > 0 &&
+      filteredIncidents.length === 0
+    "
+    class="state-card"
+  >
+    Aucun incident ne correspond aux filtres sélectionnés.
+  </div>
+
+  <section
+    *ngIf="
+      !incidentsLoading &&
+      filteredIncidents.length > 0
+    "
+    class="incidents-list"
+  >
+
+    <article
+      *ngFor="
+        let incident of filteredIncidents;
+        trackBy: trackByIncidentId
+      "
+      class="incident-card"
+      [class.closed-card]="incident.status === 'CLOTURE'"
+    >
+
+      <div
+        class="severity-indicator"
+        [class.low-indicator]="incident.severity === 'FAIBLE'"
+        [class.medium-indicator]="incident.severity === 'MOYENNE'"
+        [class.high-indicator]="incident.severity === 'ELEVEE'"
+      ></div>
+
+      <div class="incident-content">
+
+        <header class="incident-heading">
+
+          <div>
+            <p class="incident-reference">
+              Incident #{{ incident.id }}
+            </p>
+
+            <h2>
+              {{ incident.title }}
+            </h2>
+          </div>
+
+          <div class="incident-badges">
+
+            <span
+              class="severity-badge"
+              [class.low-severity]="incident.severity === 'FAIBLE'"
+              [class.medium-severity]="incident.severity === 'MOYENNE'"
+              [class.high-severity]="incident.severity === 'ELEVEE'"
+            >
+              {{ getSeverityLabel(incident.severity) }}
+            </span>
+
+            <span
+              class="status-badge"
+              [class.open-status]="incident.status === 'OUVERT'"
+              [class.progress-status]="incident.status === 'EN_COURS'"
+              [class.closed-status]="incident.status === 'CLOTURE'"
+            >
+              {{ getStatusLabel(incident.status) }}
+            </span>
+
+          </div>
+
+        </header>
+
+        <p
+          *ngIf="incident.description"
+          class="incident-description"
+        >
+          {{ incident.description }}
+        </p>
+
+        <div class="incident-metadata">
+
+          <span>
+            <strong>Mission :</strong>
+            {{ incident.missionName }}
+          </span>
+
+          <span>
+            <strong>Satellite :</strong>
+            {{ incident.satelliteName || 'Incident général' }}
+          </span>
+
+          <span>
+            <strong>Créé par :</strong>
+            {{ incident.createdBy }}
+          </span>
+
+          <span>
+            <strong>Créé le :</strong>
+            {{ formatDate(incident.createdAt) }}
+          </span>
+
+          <span *ngIf="incident.alertId">
+            <strong>Alerte liée :</strong>
+            #{{ incident.alertId }}
+          </span>
+
+        </div>
+
+        <div
+          *ngIf="incident.notes"
+          class="incident-notes"
+        >
+          <strong>Notes de suivi</strong>
+          <p>{{ incident.notes }}</p>
+        </div>
+
+        <div
+          *ngIf="incident.closedAt"
+          class="closure-information"
+        >
+          Clôturé le
+          <strong>{{ formatDate(incident.closedAt) }}</strong>
+        </div>
+
+      </div>
+
+      <div class="incident-actions">
+
+        <a
+          *ngIf="incident.satelliteId"
+          [routerLink]="[
+            '/satellites',
+            incident.satelliteId
+          ]"
+          class="detail-link"
+        >
+          Voir le satellite
+        </a>
+
+        <a
+          [routerLink]="[
+            '/missions',
+            incident.missionId,
+            'dashboard'
+          ]"
+          class="detail-link"
+        >
+          Voir la mission
+        </a>
+
+        <button
+          *ngIf="canEditIncident(incident)"
+          type="button"
+          class="secondary-action-button"
+          [disabled]="processingIncidentId === incident.id"
+          (click)="startEditIncident(incident)"
+        >
+          Modifier
+        </button>
+
+        <button
+          *ngIf="canMoveToInProgress(incident)"
+          type="button"
+          class="progress-button"
+          [disabled]="processingIncidentId === incident.id"
+          (click)="moveToInProgress(incident)"
+        >
+          {{
+            processingIncidentId === incident.id
+              ? 'Traitement...'
+              : 'Passer en cours'
+          }}
+        </button>
+
+        <button
+          *ngIf="canCloseIncident(incident)"
+          type="button"
+          class="close-incident-button"
+          [disabled]="processingIncidentId === incident.id"
+          (click)="closeIncident(incident)"
+        >
+          {{
+            processingIncidentId === incident.id
+              ? 'Traitement...'
+              : 'Clôturer'
+          }}
+        </button>
+
+      </div>
+
+    </article>
+
+  </section>
+
+</section>

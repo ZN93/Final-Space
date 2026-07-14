@@ -1,1 +1,418 @@
-<p>alert-list-page works!</p>
+<section class="alerts-page">
+
+  <header class="page-header">
+
+    <div>
+      <p class="page-eyebrow">
+        Supervision opérationnelle
+      </p>
+
+      <h1>
+        Alertes
+      </h1>
+
+      <p class="page-description">
+        Consultez les alertes générées pour une mission et acquittez
+        celles qui ont été prises en charge.
+      </p>
+    </div>
+
+    <div class="page-actions">
+
+      <a
+        *ngIf="selectedMissionId"
+        [routerLink]="[
+          '/missions',
+          selectedMissionId,
+          'dashboard'
+        ]"
+        class="secondary-link"
+      >
+        Dashboard mission
+      </a>
+
+      <button
+        type="button"
+        class="secondary-button"
+        [disabled]="missionsLoading || alertsLoading"
+        (click)="refresh()"
+      >
+        Actualiser
+      </button>
+
+    </div>
+
+  </header>
+
+  <div
+    *ngIf="successMessage"
+    class="message-card success-message"
+    role="status"
+  >
+    {{ successMessage }}
+  </div>
+
+  <div
+    *ngIf="errorMessage"
+    class="message-card error-message"
+    role="alert"
+  >
+    {{ errorMessage }}
+  </div>
+
+  <section class="mission-card">
+
+    <div class="mission-heading">
+
+      <span class="mission-icon">
+        A
+      </span>
+
+      <div>
+        <h2>
+          Mission surveillée
+        </h2>
+
+        <p>
+          Les alertes sont regroupées par mission.
+        </p>
+      </div>
+
+    </div>
+
+    <div class="form-field mission-select">
+
+      <label for="mission-select">
+        Mission
+      </label>
+
+      <select
+        id="mission-select"
+        [(ngModel)]="selectedMissionId"
+        [disabled]="missionsLoading || missions.length === 0"
+        (change)="onMissionChange()"
+      >
+        <option
+          *ngFor="
+            let mission of missions;
+            trackBy: trackByMissionId
+          "
+          [ngValue]="mission.id"
+        >
+          {{ mission.name }}
+          —
+          {{ mission.status === 'ACTIVE' ? 'Active' : 'Clôturée' }}
+        </option>
+      </select>
+
+    </div>
+
+  </section>
+
+  <section
+    *ngIf="selectedMission"
+    class="summary-row"
+  >
+
+    <article class="summary-card">
+      <span>Total</span>
+      <strong>{{ alerts.length }}</strong>
+    </article>
+
+    <article class="summary-card">
+      <span>Actives</span>
+      <strong>{{ activeAlertCount }}</strong>
+    </article>
+
+    <article class="summary-card">
+      <span>Acquittées</span>
+      <strong>{{ acknowledgedAlertCount }}</strong>
+    </article>
+
+    <article class="summary-card">
+      <span>Gravité élevée</span>
+      <strong>{{ highSeverityAlertCount }}</strong>
+    </article>
+
+  </section>
+
+  <section
+    *ngIf="selectedMission"
+    class="filters-card"
+  >
+
+    <div class="form-field search-field">
+
+      <label for="alert-search">
+        Rechercher
+      </label>
+
+      <input
+        id="alert-search"
+        type="search"
+        [(ngModel)]="searchTerm"
+        placeholder="Message, métrique, type ou satellite"
+      >
+
+    </div>
+
+    <div class="form-field">
+
+      <label for="status-filter">
+        Statut
+      </label>
+
+      <select
+        id="status-filter"
+        [(ngModel)]="statusFilter"
+      >
+        <option value="ALL">
+          Tous les statuts
+        </option>
+
+        <option value="ACTIVE">
+          Actives
+        </option>
+
+        <option value="ACQUITTEE">
+          Acquittées
+        </option>
+      </select>
+
+    </div>
+
+    <div class="form-field">
+
+      <label for="severity-filter">
+        Gravité
+      </label>
+
+      <select
+        id="severity-filter"
+        [(ngModel)]="severityFilter"
+      >
+        <option value="ALL">
+          Toutes les gravités
+        </option>
+
+        <option value="FAIBLE">
+          Faible
+        </option>
+
+        <option value="MOYENNE">
+          Moyenne
+        </option>
+
+        <option value="ELEVEE">
+          Élevée
+        </option>
+      </select>
+
+    </div>
+
+    <button
+      type="button"
+      class="reset-button"
+      (click)="resetFilters()"
+    >
+      Réinitialiser
+    </button>
+
+  </section>
+
+  <div
+    *ngIf="missionsLoading"
+    class="state-card"
+  >
+    Chargement des missions...
+  </div>
+
+  <div
+    *ngIf="!missionsLoading && missions.length === 0"
+    class="state-card"
+  >
+    Aucune mission n’est disponible.
+  </div>
+
+  <div
+    *ngIf="alertsLoading"
+    class="state-card"
+  >
+    Chargement des alertes...
+  </div>
+
+  <div
+    *ngIf="
+      !alertsLoading &&
+      selectedMission &&
+      alerts.length === 0
+    "
+    class="state-card"
+  >
+    Aucune alerte n’est associée à cette mission.
+  </div>
+
+  <div
+    *ngIf="
+      !alertsLoading &&
+      alerts.length > 0 &&
+      filteredAlerts.length === 0
+    "
+    class="state-card"
+  >
+    Aucune alerte ne correspond aux filtres sélectionnés.
+  </div>
+
+  <section
+    *ngIf="
+      !alertsLoading &&
+      filteredAlerts.length > 0
+    "
+    class="alerts-list"
+  >
+
+    <article
+      *ngFor="
+        let alert of filteredAlerts;
+        trackBy: trackByAlertId
+      "
+      class="alert-card"
+      [class.acknowledged-card]="
+        alert.status === 'ACQUITTEE'
+      "
+    >
+
+      <div
+        class="severity-indicator"
+        [class.low-indicator]="alert.severity === 'FAIBLE'"
+        [class.medium-indicator]="alert.severity === 'MOYENNE'"
+        [class.high-indicator]="alert.severity === 'ELEVEE'"
+      ></div>
+
+      <div class="alert-content">
+
+        <header class="alert-heading">
+
+          <div>
+            <p class="alert-reference">
+              Alerte #{{ alert.id }}
+            </p>
+
+            <h2>
+              {{ alert.type }}
+            </h2>
+          </div>
+
+          <div class="alert-badges">
+
+            <span
+              class="severity-badge"
+              [class.low-severity]="alert.severity === 'FAIBLE'"
+              [class.medium-severity]="alert.severity === 'MOYENNE'"
+              [class.high-severity]="alert.severity === 'ELEVEE'"
+            >
+              {{ getSeverityLabel(alert.severity) }}
+            </span>
+
+            <span
+              class="status-badge"
+              [class.active-status]="alert.status === 'ACTIVE'"
+              [class.acknowledged-status]="
+                alert.status === 'ACQUITTEE'
+              "
+            >
+              {{ getStatusLabel(alert.status) }}
+            </span>
+
+          </div>
+
+        </header>
+
+        <p class="alert-message">
+          {{ alert.message }}
+        </p>
+
+        <div class="alert-metadata">
+
+          <span>
+            <strong>Mission :</strong>
+            {{ alert.missionName }}
+          </span>
+
+          <span>
+            <strong>Satellite :</strong>
+            {{ alert.satelliteName || 'Aucun satellite' }}
+          </span>
+
+          <span>
+            <strong>Métrique :</strong>
+            {{ alert.metric }}
+          </span>
+
+          <span>
+            <strong>Créée le :</strong>
+            {{ formatDate(alert.createdAt) }}
+          </span>
+
+        </div>
+
+        <div
+          *ngIf="alert.status === 'ACQUITTEE'"
+          class="acknowledgement-information"
+        >
+          Acquittée le
+          <strong>{{ formatDate(alert.ackAt) }}</strong>
+
+          <ng-container *ngIf="alert.ackBy">
+            par
+            <strong>{{ alert.ackBy }}</strong>
+          </ng-container>
+        </div>
+
+      </div>
+
+      <div class="alert-actions">
+
+        <a
+          *ngIf="alert.satelliteId"
+          [routerLink]="[
+            '/satellites',
+            alert.satelliteId
+          ]"
+          class="detail-link"
+        >
+          Voir le satellite
+        </a>
+
+        <a
+          [routerLink]="[
+            '/missions',
+            alert.missionId,
+            'dashboard'
+          ]"
+          class="detail-link"
+        >
+          Voir la mission
+        </a>
+
+        <button
+          *ngIf="canAcknowledge(alert)"
+          type="button"
+          class="acknowledge-button"
+          [disabled]="acknowledgingAlertId === alert.id"
+          (click)="acknowledgeAlert(alert)"
+        >
+          {{
+            acknowledgingAlertId === alert.id
+              ? 'Acquittement...'
+              : 'Acquitter'
+          }}
+        </button>
+
+      </div>
+
+    </article>
+
+  </section>
+
+</section>
