@@ -107,7 +107,10 @@
     <div class="module-grid">
 
       <article
-        *ngFor="let module of modules"
+        *ngFor="
+          let module of modules;
+          trackBy: trackByRoute
+        "
         class="module-card"
       >
         <div class="module-card-header">
@@ -116,18 +119,23 @@
             {{ module.icon }}
           </span>
 
-          <span
-            class="availability-badge"
-            [class.available]="module.available"
-          >
-            {{ module.available ? 'Disponible' : 'Indisponible' }}
-          </span>
+          <div class="module-card-header">
+
+            <span class="module-icon">
+              {{ module.icon }}
+            </span>
+
+                      <span class="availability-badge available">
+              Disponible
+            </span>
+
+          </div>
 
         </div>
 
         <div class="module-content">
           <h3>
-            {{ module.title }}
+            {{ module.label }}
           </h3>
 
           <p>
@@ -136,11 +144,10 @@
         </div>
 
         <a
-          *ngIf="module.route"
           [routerLink]="module.route"
           class="module-link"
         >
-          {{ module.actionLabel }}
+          Accéder à {{ module.label.toLowerCase() }}
           <span aria-hidden="true">→</span>
         </a>
       </article>
@@ -159,18 +166,20 @@
       </p>
 
       <h2>
-        Espace administrateur
+        Gestion des utilisateurs
       </h2>
 
       <p>
-        Les fonctionnalités de gestion des utilisateurs ne disposent pas encore
-        d’une page frontend dédiée.
+        Créez les comptes, attribuez les rôles et gérez leur statut.
       </p>
     </div>
 
-    <span class="coming-soon-badge">
-      Interface à compléter
-    </span>
+    <a
+      routerLink="/admin/users"
+      class="primary-action"
+    >
+      Administrer les utilisateurs
+    </a>
   </section>
 
 </section>

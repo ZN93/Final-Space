@@ -1,16 +1,17 @@
-import { Component, inject, Input } from '@angular/core';
 import { NgClass, NgFor } from '@angular/common';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import {
+  Component,
+  Input,
+  inject
+} from '@angular/core';
+import {
+  RouterLink,
+  RouterLinkActive
+} from '@angular/router';
 
 import { AuthService } from '../../auth/auth.service';
-
-interface NavigationItem {
-  label: string;
-  description: string;
-  route: string;
-  icon: string;
-  adminOnly?: boolean;
-}
+import { NAVIGATION_ITEMS } from '../config/navigation-items';
+import { NavigationItem } from '../models/navigation-item.model';
 
 @Component({
   selector: 'app-sidebar',
@@ -31,67 +32,13 @@ export class AppSidebarComponent {
   @Input()
   collapsed = false;
 
-  readonly items: NavigationItem[] = [
-    {
-      label: 'Vue g\u00e9n\u00e9rale',
-      description: 'Synth\u00e8se op\u00e9rationnelle',
-      route: '/dashboard',
-      icon: '\u2302'
-    },
-    {
-      label: 'Missions',
-      description: 'Suivi des missions',
-      route: '/missions',
-      icon: 'M'
-    },
-    {
-      label: 'Satellites',
-      description: 'Parc satellitaire',
-      route: '/satellites',
-      icon: 'S'
-    },
-    {
-      label: 'Simulations',
-      description: 'Calculs orbitaux',
-      route: '/simulations',
-      icon: 'SIM'
-    },
-    {
-      label: 'T\u00e9l\u00e9m\u00e9trie',
-      description: 'Mesures et anomalies',
-      route: '/telemetry',
-      icon: 'T'
-    },
-    {
-      label: 'Alertes',
-      description: 'Alertes op\u00e9rationnelles',
-      route: '/alerts',
-      icon: 'A'
-    },
-    {
-      label: 'Incidents',
-      description: 'Suivi des incidents',
-      route: '/incidents',
-      icon: 'I'
-    },
-    {
-      label: 'Rapports',
-      description: 'Exports et rapports',
-      route: '/reports',
-      icon: 'R'
-    },
-    {
-      label: 'Utilisateurs',
-      description: 'Administration des comptes',
-      route: '/admin/users',
-      icon: 'U',
-      adminOnly: true
-    }
-  ];
+  readonly items = NAVIGATION_ITEMS;
 
   get visibleItems(): NavigationItem[] {
     return this.items.filter(
-      item => !item.adminOnly || this.authService.isAdmin()
+      item =>
+        !item.adminOnly ||
+        this.authService.isAdmin()
     );
   }
 }
