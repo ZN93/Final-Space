@@ -56,51 +56,16 @@
     </div>
 
     <div class="context-grid">
-      <div class="form-field">
-        <label for="mission-select">Mission</label>
-
-        <select
-          id="mission-select"
-          [(ngModel)]="selectedMissionId"
-          [disabled]="missionsLoading || missions.length === 0"
-          (change)="onMissionChange()"
-        >
-          <option
-            *ngFor="
-              let mission of missions;
-              trackBy: trackByMissionId
-            "
-            [ngValue]="mission.id"
-          >
-            {{ mission.name }}
-            —
-            {{ mission.status === 'ACTIVE' ? 'Active' : 'Clôturée' }}
-          </option>
-        </select>
-      </div>
-
-      <div class="form-field">
-        <label for="satellite-select">Satellite</label>
-
-        <select
-          id="satellite-select"
-          [(ngModel)]="selectedSatelliteId"
-          [disabled]="satellitesLoading || satellites.length === 0"
-          (change)="onSatelliteChange()"
-        >
-          <option
-            *ngFor="
-              let satellite of satellites;
-              trackBy: trackBySatelliteId
-            "
-            [ngValue]="satellite.id"
-          >
-            {{ satellite.name }}
-            —
-            {{ satellite.status === 'ACTIF' ? 'Actif' : 'Inactif' }}
-          </option>
-        </select>
-      </div>
+      <app-mission-satellite-selector
+        [missions]="missions"
+        [satellites]="satellites"
+        [missionsLoading]="missionsLoading"
+        [satellitesLoading]="satellitesLoading"
+        [(selectedMissionId)]="selectedMissionId"
+        [(selectedSatelliteId)]="selectedSatelliteId"
+        (missionChange)="onMissionChange()"
+        (satelliteChange)="onSatelliteChange()"
+      />
     </div>
   </section>
 

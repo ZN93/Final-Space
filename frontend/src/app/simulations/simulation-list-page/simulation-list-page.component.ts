@@ -13,6 +13,12 @@ import { MissionService } from '../../missions/services/mission.service';
 import { Satellite } from '../../satellites/models/satellite.model';
 import { SatelliteService } from '../../satellites/services/satellite.service';
 import {
+  MissionSatelliteSelectorComponent
+} from '../../shared/mission-satellite-selector/mission-satellite-selector.component';
+import {
+  MissionSatelliteContextService
+} from '../../shared/services/mission-satellite-context.service';
+import {
   SimulationListItemResponse,
   SimulationResponse,
   SimulationStatus,
@@ -29,7 +35,8 @@ type SimulationStatusFilter = 'ALL' | SimulationStatus;
   imports: [
     CommonModule,
     FormsModule,
-    RouterLink
+    RouterLink,
+    MissionSatelliteSelectorComponent
   ],
   templateUrl: './simulation-list-page.component.html',
   styleUrl: './simulation-list-page.component.css'
@@ -38,6 +45,8 @@ export class SimulationListPageComponent implements OnInit {
 
   private readonly missionService = inject(MissionService);
   private readonly satelliteService = inject(SatelliteService);
+  private readonly contextService =
+    inject(MissionSatelliteContextService);
   private readonly simulationService = inject(SimulationService);
   private readonly authService = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
@@ -160,10 +169,8 @@ export class SimulationListPageComponent implements OnInit {
 
     this.missionService.findAll().subscribe({
       next: missions => {
-        this.missions = [...missions].sort(
-          (first, second) =>
-            first.name.localeCompare(second.name)
-        );
+        this.missions =
+          this.contextService.sortMissions(missions);
 
         this.missionsLoading = false;
         this.initializeMissionSelection();
@@ -208,10 +215,8 @@ export class SimulationListPageComponent implements OnInit {
 
     this.satelliteService.findByMission(missionId).subscribe({
       next: satellites => {
-        this.satellites = [...satellites].sort(
-          (first, second) =>
-            first.name.localeCompare(second.name)
-        );
+        this.satellites =
+          this.contextService.sortSatellites(satellites);
 
         this.satellitesLoading = false;
         this.initializeSatelliteSelection();

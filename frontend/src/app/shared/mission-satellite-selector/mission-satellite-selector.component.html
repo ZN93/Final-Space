@@ -1,0 +1,65 @@
+﻿<div class="mission-satellite-selector">
+  <div class="form-field">
+    <label for="mission-select">
+      Mission
+    </label>
+
+    <select
+      id="mission-select"
+      [ngModel]="selectedMissionId"
+      [disabled]="
+        missionsLoading ||
+        missions.length === 0
+      "
+      (ngModelChange)="onMissionSelectionChange($event)"
+    >
+      <option
+        *ngFor="
+          let mission of missions;
+          trackBy: trackByMissionId
+        "
+        [ngValue]="mission.id"
+      >
+        {{ mission.name }}
+        —
+        {{
+          mission.status === 'ACTIVE'
+            ? 'Active'
+            : 'Clôturée'
+        }}
+      </option>
+    </select>
+  </div>
+
+  <div class="form-field">
+    <label for="satellite-select">
+      Satellite
+    </label>
+
+    <select
+      id="satellite-select"
+      [ngModel]="selectedSatelliteId"
+      [disabled]="
+        satellitesLoading ||
+        satellites.length === 0
+      "
+      (ngModelChange)="onSatelliteSelectionChange($event)"
+    >
+      <option
+        *ngFor="
+          let satellite of satellites;
+          trackBy: trackBySatelliteId
+        "
+        [ngValue]="satellite.id"
+      >
+        {{ satellite.name }}
+        —
+        {{
+          satellite.status === 'ACTIF'
+            ? 'Actif'
+            : 'Inactif'
+        }}
+      </option>
+    </select>
+  </div>
+</div>

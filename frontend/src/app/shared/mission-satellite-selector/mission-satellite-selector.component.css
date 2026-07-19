@@ -1,0 +1,25 @@
+﻿.mission-satellite-selector {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-field label {
+  font-weight: 600;
+}
+
+.form-field select {
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .mission-satellite-selector {
+    grid-template-columns: 1fr;
+  }
+}
