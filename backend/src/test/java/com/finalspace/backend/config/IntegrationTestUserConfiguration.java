@@ -4,40 +4,35 @@ import com.finalspace.backend.user.RoleType;
 import com.finalspace.backend.user.User;
 import com.finalspace.backend.user.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
 
 @Configuration
+@Profile("test")
 @RequiredArgsConstructor
-public class DataInitializer {
+public class IntegrationTestUserConfiguration {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    @Value("${app.bootstrap.admin.email:}")
-    private String adminEmail;
-
-    @Value("${app.bootstrap.admin.password:}")
-    private String adminPassword;
-
     @Bean
-    @ConditionalOnProperty(name = "app.bootstrap.enabled", havingValue = "true")
-    public CommandLineRunner init() {
+    public CommandLineRunner initIntegrationTestUsers() {
         return args -> {
-            if (adminEmail.isBlank() || adminPassword.isBlank()) {
-                throw new IllegalStateException(
-                        "APP_BOOTSTRAP_ADMIN_EMAIL and APP_BOOTSTRAP_ADMIN_PASSWORD are required "
-                                + "when APP_BOOTSTRAP_ENABLED=true"
-                );
-            }
-
-            createUserIfNotExists(adminEmail, adminPassword, RoleType.ADMIN);
+            createUserIfNotExists(
+                    "operator@finalspace.com",
+                    "operator123",
+                    RoleType.OPERATEUR
+            );
+            createUserIfNotExists(
+                    "reader@finalspace.com",
+                    "reader123",
+                    RoleType.LECTEUR
+            );
         };
     }
 
