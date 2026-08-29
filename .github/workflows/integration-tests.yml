@@ -23,14 +23,17 @@ jobs:
       - name: Create .env file
         run: cp .env.example .env
 
+      - name: Configure CI application URL
+        run: sed -i 's#^APP_BASE_URL=.*#APP_BASE_URL=http://127.0.0.1:8080#' .env
+
       - name: Validate Docker Compose configuration
-        run: docker compose config
+        run: docker compose config --quiet
 
       - name: Build Docker images
         run: docker compose build
 
       - name: Start full application stack
-        run: docker compose up -d
+        run: docker compose up -d --wait --wait-timeout 300
 
       - name: Show containers status
         run: docker compose ps
@@ -38,7 +41,7 @@ jobs:
       - name: Wait for backend healthcheck
         run: |
           for i in {1..60}; do
-            if curl -fsS http://localhost:8080/actuator/health; then
+            if curl -fsS http://127.0.0.1:8080/actuator/health; then
               echo "Backend is ready"
               exit 0
             fi
@@ -53,12 +56,12 @@ jobs:
 
       - name: Check frontend availability
         run: |
-          curl -fsS http://localhost > /tmp/frontend.html
-          test -s /tmp/frontend.html
+          curl -fsS http://127.0.0.1:8080/health > /tmp/frontend-health.txt
+          grep -Fx "ok" /tmp/frontend-health.txt
 
       - name: Check frontend reverse proxy to backend
         run: |
-          curl -i http://localhost/api/missions > /tmp/api-response.txt
+          curl -i http://127.0.0.1:8080/api/missions > /tmp/api-response.txt
 
           if grep -E "HTTP/1.1 401|HTTP/1.1 403|HTTP/2 401|HTTP/2 403" /tmp/api-response.txt; then
             echo "API proxy is reachable and protected"
@@ -71,20 +74,20 @@ jobs:
 
       - name: Check PostgreSQL container health
         run: |
-          docker inspect finalspace-postgres --format='{{json .State.Health.Status}}' | grep healthy
+          postgres_container_id="$(docker compose ps -q postgres)"
+          test -n "${postgres_container_id}"
+          test "$(docker inspect --format='{{.State.Health.Status}}' "${postgres_container_id}")" = "healthy"
 
       - name: Check MongoDB container health
         run: |
-          docker inspect finalspace-mongodb --format='{{json .State.Health.Status}}' | grep healthy
-
-      - name: Stop stack
-        if: always()
-        run: docker compose down
+          mongo_container_id="$(docker compose ps -q mongo)"
+          test -n "${mongo_container_id}"
+          test "$(docker inspect --format='{{.State.Health.Status}}' "${mongo_container_id}")" = "healthy"
 
       - name: Show logs on failure
         if: failure()
-        run: |
-          docker compose logs backend
-          docker compose logs frontend
-          docker compose logs postgres
-          docker compose logs mongodb
+        run: docker compose logs --no-color backend frontend postgres mongo
+
+      - name: Stop stack
+        if: always()
+        run: docker compose down --volumes --remove-orphans
