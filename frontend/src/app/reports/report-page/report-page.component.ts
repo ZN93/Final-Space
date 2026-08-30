@@ -572,38 +572,31 @@ export class ReportPageComponent implements OnInit {
   }
 
   private initializeMissionSelection(): void {
-    if (this.missions.length === 0) {
-      this.selectedMissionId = null;
-      return;
-    }
-
-    const missionIdFromQuery = Number(
-      this.route.snapshot.queryParamMap.get(
+    const mission = this.contextService.selectMission(
+      this.missions,
+      this.contextService.readRequestedId(
+        this.route,
         'missionId'
       )
     );
 
-    const missionFromQuery = this.missions.find(
-      mission =>
-        mission.id === missionIdFromQuery
-    );
+    this.selectedMissionId = mission?.id ?? null;
 
-    const defaultMission =
-      missionFromQuery ??
-      this.missions.find(
-        mission => mission.status === 'ACTIVE'
-      ) ??
-      this.missions[0];
-
-    this.selectedMissionId = defaultMission.id;
-
-    this.loadSatellites(
-      defaultMission.id
-    );
+    if (mission) {
+      this.loadSatellites(mission.id);
+    }
   }
 
   private initializeSatelliteSelection(): void {
-    if (this.satellites.length === 0) {
+    const satellite = this.contextService.selectSatellite(
+      this.satellites,
+      this.contextService.readRequestedId(
+        this.route,
+        'satelliteId'
+      )
+    );
+
+    if (!satellite) {
       this.selectedSatelliteId = null;
       this.selectedSimulationId = null;
 
@@ -615,52 +608,26 @@ export class ReportPageComponent implements OnInit {
       return;
     }
 
-    const satelliteIdFromQuery = Number(
-      this.route.snapshot.queryParamMap.get(
-        'satelliteId'
-      )
-    );
-
-    const satelliteFromQuery =
-      this.satellites.find(
-        satellite =>
-          satellite.id === satelliteIdFromQuery
-      );
-
-    const defaultSatellite =
-      satelliteFromQuery ??
-      this.satellites.find(
-        satellite =>
-          satellite.status === 'ACTIF'
-      ) ??
-      this.satellites[0];
-
-    this.selectedSatelliteId =
-      defaultSatellite.id;
+    this.selectedSatelliteId = satellite.id;
 
     this.updateQueryParams(
       this.selectedMissionId,
-      defaultSatellite.id
+      satellite.id
     );
 
-    this.loadSatelliteReportData(
-      defaultSatellite.id
-    );
+    this.loadSatelliteReportData(satellite.id);
   }
 
   private updateQueryParams(
     missionId: number | null,
     satelliteId: number | null
   ): void {
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: {
-        missionId,
-        satelliteId
-      },
-      queryParamsHandling: 'merge',
-      replaceUrl: true
-    });
+    this.contextService.updateQueryParams(
+      this.router,
+      this.route,
+      missionId,
+      satelliteId
+    );
   }
 
   private toIsoDateOrNull(

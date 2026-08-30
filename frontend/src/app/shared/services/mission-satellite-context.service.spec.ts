@@ -1,4 +1,10 @@
 ﻿import { TestBed } from '@angular/core/testing';
+import {
+  ActivatedRoute,
+  Params,
+  Router,
+  convertToParamMap
+} from '@angular/router';
 import { Mission } from '../../missions/models/mission.model';
 import { Satellite } from '../../satellites/models/satellite.model';
 import { MissionSatelliteContextService } from './mission-satellite-context.service';
@@ -27,6 +33,12 @@ describe('MissionSatelliteContextService', () => {
     status
   } as Satellite);
 
+  const createRoute = (queryParams: Params): ActivatedRoute => ({
+    snapshot: {
+      queryParamMap: convertToParamMap(queryParams)
+    }
+  } as unknown as ActivatedRoute);
+
   beforeEach(() => {
     TestBed.configureTestingModule({});
 
@@ -37,6 +49,74 @@ describe('MissionSatelliteContextService', () => {
 
   it('should be created', () => {
     expect(service).toBeTruthy();
+  });
+
+  it('should read a positive integer selection from query parameters', () => {
+    const route = createRoute({ missionId: '42' });
+
+    expect(service.readRequestedId(route, 'missionId'))
+      .toBe(42);
+  });
+
+  it('should ignore an absent or empty selection query parameter', () => {
+    expect(
+      service.readRequestedId(createRoute({}), 'missionId')
+    ).toBeNull();
+
+    expect(
+      service.readRequestedId(
+        createRoute({ satelliteId: '  ' }),
+        'satelliteId'
+      )
+    ).toBeNull();
+  });
+
+  it('should ignore invalid selection identifiers', () => {
+    expect(
+      service.readRequestedId(
+        createRoute({ missionId: 'invalid' }),
+        'missionId'
+      )
+    ).toBeNull();
+
+    expect(
+      service.readRequestedId(
+        createRoute({ missionId: '1.5' }),
+        'missionId'
+      )
+    ).toBeNull();
+
+    expect(
+      service.readRequestedId(
+        createRoute({ missionId: '0' }),
+        'missionId'
+      )
+    ).toBeNull();
+  });
+
+  it('should update mission and satellite query parameters', () => {
+    const router = jasmine.createSpyObj<Router>(
+      'Router',
+      ['navigate']
+    );
+    const route = createRoute({ existing: 'value' });
+
+    service.updateQueryParams(
+      router,
+      route,
+      4,
+      8
+    );
+
+    expect(router.navigate).toHaveBeenCalledWith([], {
+      relativeTo: route,
+      queryParams: {
+        missionId: 4,
+        satelliteId: 8
+      },
+      queryParamsHandling: 'merge',
+      replaceUrl: true
+    });
   });
 
   it('should sort missions by name without modifying the source array', () => {
@@ -139,4 +219,3 @@ describe('MissionSatelliteContextService', () => {
       .toBeNull();
   });
 });
-

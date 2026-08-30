@@ -1,4 +1,5 @@
 ﻿import { Injectable } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Mission } from '../../missions/models/mission.model';
 import { Satellite } from '../../satellites/models/satellite.model';
 
@@ -6,6 +7,42 @@ import { Satellite } from '../../satellites/models/satellite.model';
   providedIn: 'root'
 })
 export class MissionSatelliteContextService {
+  readRequestedId(
+    route: ActivatedRoute,
+    parameterName: 'missionId' | 'satelliteId'
+  ): number | null {
+    const value = route.snapshot.queryParamMap.get(
+      parameterName
+    );
+
+    if (value === null || value.trim() === '') {
+      return null;
+    }
+
+    const id = Number(value);
+
+    return Number.isInteger(id) && id > 0
+      ? id
+      : null;
+  }
+
+  updateQueryParams(
+    router: Router,
+    route: ActivatedRoute,
+    missionId: number | null,
+    satelliteId: number | null
+  ): void {
+    void router.navigate([], {
+      relativeTo: route,
+      queryParams: {
+        missionId,
+        satelliteId
+      },
+      queryParamsHandling: 'merge',
+      replaceUrl: true
+    });
+  }
+
   sortMissions(missions: Mission[]): Mission[] {
     return [...missions].sort(
       (first, second) => first.name.localeCompare(second.name)
