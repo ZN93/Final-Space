@@ -1,4 +1,9 @@
 ﻿import { TestBed } from '@angular/core/testing';
+import {
+  ActivatedRoute,
+  Params,
+  convertToParamMap
+} from '@angular/router';
 import { Mission } from '../../missions/models/mission.model';
 import { Satellite } from '../../satellites/models/satellite.model';
 import { MissionSatelliteContextService } from './mission-satellite-context.service';
@@ -27,6 +32,12 @@ describe('MissionSatelliteContextService', () => {
     status
   } as Satellite);
 
+  const createRoute = (queryParams: Params): ActivatedRoute => ({
+    snapshot: {
+      queryParamMap: convertToParamMap(queryParams)
+    }
+  } as unknown as ActivatedRoute);
+
   beforeEach(() => {
     TestBed.configureTestingModule({});
 
@@ -37,6 +48,70 @@ describe('MissionSatelliteContextService', () => {
 
   it('should be created', () => {
     expect(service).toBeTruthy();
+  });
+
+  it('should select the mission requested in query parameters', () => {
+    const route = createRoute({ missionId: '42' });
+    const missions = [
+      createMission(1, 'Mission A', 'ACTIVE'),
+      createMission(42, 'Mission B', 'CLOTUREE')
+    ];
+
+    expect(
+      service.selectMissionIdFromRoute(route, missions)
+    ).toBe(42);
+  });
+
+  it('should ignore invalid mission identifiers from query parameters', () => {
+    const missions = [
+      createMission(1, 'Mission A', 'CLOTUREE'),
+      createMission(2, 'Mission B', 'ACTIVE')
+    ];
+
+    const invalidValues = [
+      '',
+      'invalid',
+      '1.5',
+      '0'
+    ];
+
+    invalidValues.forEach(missionId => {
+      expect(
+        service.selectMissionIdFromRoute(
+          createRoute({ missionId }),
+          missions
+        )
+      ).toBe(2);
+    });
+  });
+
+  it('should select the active mission when the query parameter is absent', () => {
+    const missions = [
+      createMission(1, 'Mission A', 'CLOTUREE'),
+      createMission(2, 'Mission B', 'ACTIVE')
+    ];
+
+    expect(
+      service.selectMissionIdFromRoute(
+        createRoute({}),
+        missions
+      )
+    ).toBe(2);
+  });
+
+  it('should select the satellite requested in query parameters', () => {
+    const route = createRoute({ satelliteId: '8' });
+    const satellites = [
+      createSatellite(4, 'Satellite A', 'ACTIF'),
+      createSatellite(8, 'Satellite B', 'INACTIF')
+    ];
+
+    expect(
+      service.selectSatelliteIdFromRoute(
+        route,
+        satellites
+      )
+    ).toBe(8);
   });
 
   it('should sort missions by name without modifying the source array', () => {
@@ -139,4 +214,3 @@ describe('MissionSatelliteContextService', () => {
       .toBeNull();
   });
 });
-

@@ -8,6 +8,7 @@ on:
       - completed
 
 permissions:
+  checks: read
   contents: read
 
 concurrency:
@@ -88,11 +89,107 @@ jobs:
             echo "deploy=${deploy}"
           } >> "${GITHUB_OUTPUT}"
 
+  release-gate:
+    name: Verify main quality gates
+    needs:
+      - prepare
+    if: needs.prepare.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      checks: read
+      contents: read
+
+    steps:
+      - name: Wait for every required main check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REVISION: ${{ needs.prepare.outputs.revision }}
+        run: |
+          set -euo pipefail
+
+          required_checks=(
+            'Backend - Build|github-actions'
+            'Frontend - Build|github-actions'
+            'Tests, coverage and SonarQube Cloud|github-actions'
+            'Docker Compose integration tests|github-actions'
+            'SonarCloud Code Analysis|sonarqubecloud'
+          )
+
+          deadline=$((SECONDS + 600))
+
+          while [ "$SECONDS" -lt "$deadline" ]; do
+            response="$(
+              gh api \
+                -H 'Accept: application/vnd.github+json' \
+                -H 'X-GitHub-Api-Version: 2022-11-28' \
+                "repos/${GITHUB_REPOSITORY}/commits/${REVISION}/check-runs?per_page=100"
+            )"
+
+            waiting=false
+
+            for required_check in "${required_checks[@]}"; do
+              check_name="${required_check%%|*}"
+              check_app="${required_check#*|}"
+
+              check_run="$(
+                jq -c \
+                  --arg app "$check_app" \
+                  --arg name "$check_name" \
+                  '[
+                    .check_runs[]
+                    | select(
+                        .name == $name and
+                        .app.slug == $app
+                      )
+                  ]
+                  | sort_by(.id)
+                  | last // empty' \
+                  <<< "$response"
+              )"
+
+              if [ -z "$check_run" ]; then
+                echo "Waiting for check: ${check_name}"
+                waiting=true
+                continue
+              fi
+
+              status="$(jq -r '.status' <<< "$check_run")"
+              conclusion="$(jq -r '.conclusion // "pending"' <<< "$check_run")"
+
+              if [ "$status" != 'completed' ]; then
+                echo "Waiting for check: ${check_name} (${status})"
+                waiting=true
+                continue
+              fi
+
+              if [ "$conclusion" != 'success' ]; then
+                echo "Required check failed: ${check_name} (${conclusion})" >&2
+                exit 1
+              fi
+
+              echo "Required check passed: ${check_name}"
+            done
+
+            if [ "$waiting" = 'false' ]; then
+              echo "Every required main check passed for ${REVISION}"
+              exit 0
+            fi
+
+            sleep 10
+          done
+
+          echo "Timed out waiting for required main checks" >&2
+          exit 1
+
   publish-images:
     name: Publish ${{ matrix.service }} image
     needs:
       - prepare
-    if: needs.prepare.outputs.publish == 'true'
+      - release-gate
+    if: >-
+      needs.prepare.outputs.publish == 'true' &&
+      needs.release-gate.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:

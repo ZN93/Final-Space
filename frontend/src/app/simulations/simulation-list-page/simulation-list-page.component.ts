@@ -1,11 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import {
-  ActivatedRoute,
-  Router,
-  RouterLink
-} from '@angular/router';
+import { RouterLink } from '@angular/router';
 
 import { AuthService } from '../../auth/auth.service';
 import { Mission } from '../../missions/models/mission.model';
@@ -16,8 +12,8 @@ import {
   MissionSatelliteSelectorComponent
 } from '../../shared/mission-satellite-selector/mission-satellite-selector.component';
 import {
-  MissionSatelliteContextService
-} from '../../shared/services/mission-satellite-context.service';
+  MissionSatelliteContextPage
+} from '../../shared/services/mission-satellite-context-page';
 import {
   SimulationListItemResponse,
   SimulationResponse,
@@ -41,16 +37,14 @@ type SimulationStatusFilter = 'ALL' | SimulationStatus;
   templateUrl: './simulation-list-page.component.html',
   styleUrl: './simulation-list-page.component.css'
 })
-export class SimulationListPageComponent implements OnInit {
+export class SimulationListPageComponent
+  extends MissionSatelliteContextPage
+  implements OnInit {
 
   private readonly missionService = inject(MissionService);
   private readonly satelliteService = inject(SatelliteService);
-  private readonly contextService =
-    inject(MissionSatelliteContextService);
   private readonly simulationService = inject(SimulationService);
   private readonly authService = inject(AuthService);
-  private readonly route = inject(ActivatedRoute);
-  private readonly router = inject(Router);
 
   missions: Mission[] = [];
   satellites: Satellite[] = [];
@@ -313,6 +307,21 @@ export class SimulationListPageComponent implements OnInit {
     this.statusFilter = 'ALL';
   }
 
+  protected override get missionSatelliteContextState(): this {
+    return this;
+  }
+
+  protected override applyInitialSatelliteSelection(
+    satelliteId: number | null
+  ): void {
+    if (satelliteId === null) {
+      this.simulations = [];
+      return;
+    }
+
+    this.loadSimulations(satelliteId);
+  }
+
   openLaunchPanel(type: SimulationType): void {
     if (!this.canLaunchSimulation) {
       return;
@@ -428,85 +437,6 @@ export class SimulationListPageComponent implements OnInit {
     simulation: SimulationListItemResponse
   ): number {
     return simulation.id;
-  }
-
-  private initializeMissionSelection(): void {
-    if (this.missions.length === 0) {
-      this.selectedMissionId = null;
-      return;
-    }
-
-    const missionIdFromQuery = Number(
-      this.route.snapshot.queryParamMap.get('missionId')
-    );
-
-    const missionFromQuery = this.missions.find(
-      mission => mission.id === missionIdFromQuery
-    );
-
-    const defaultMission =
-      missionFromQuery ??
-      this.missions.find(
-        mission => mission.status === 'ACTIVE'
-      ) ??
-      this.missions[0];
-
-    this.selectedMissionId = defaultMission.id;
-    this.loadSatellites(defaultMission.id);
-  }
-
-  private initializeSatelliteSelection(): void {
-    if (this.satellites.length === 0) {
-      this.selectedSatelliteId = null;
-      this.simulations = [];
-
-      this.updateQueryParams(
-        this.selectedMissionId,
-        null
-      );
-
-      return;
-    }
-
-    const satelliteIdFromQuery = Number(
-      this.route.snapshot.queryParamMap.get('satelliteId')
-    );
-
-    const satelliteFromQuery = this.satellites.find(
-      satellite =>
-        satellite.id === satelliteIdFromQuery
-    );
-
-    const defaultSatellite =
-      satelliteFromQuery ??
-      this.satellites.find(
-        satellite => satellite.status === 'ACTIF'
-      ) ??
-      this.satellites[0];
-
-    this.selectedSatelliteId = defaultSatellite.id;
-
-    this.updateQueryParams(
-      this.selectedMissionId,
-      defaultSatellite.id
-    );
-
-    this.loadSimulations(defaultSatellite.id);
-  }
-
-  private updateQueryParams(
-    missionId: number | null,
-    satelliteId: number | null
-  ): void {
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: {
-        missionId,
-        satelliteId
-      },
-      queryParamsHandling: 'merge',
-      replaceUrl: true
-    });
   }
 
   private launchOrbitSimulation(
