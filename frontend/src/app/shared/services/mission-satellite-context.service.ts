@@ -1,5 +1,5 @@
 ﻿import { Injectable } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { Mission } from '../../missions/models/mission.model';
 import { Satellite } from '../../satellites/models/satellite.model';
 
@@ -7,7 +7,27 @@ import { Satellite } from '../../satellites/models/satellite.model';
   providedIn: 'root'
 })
 export class MissionSatelliteContextService {
-  readRequestedId(
+  selectMissionFromRoute(
+    route: ActivatedRoute,
+    missions: Mission[]
+  ): Mission | null {
+    return this.selectMission(
+      missions,
+      this.readRequestedId(route, 'missionId')
+    );
+  }
+
+  selectSatelliteFromRoute(
+    route: ActivatedRoute,
+    satellites: Satellite[]
+  ): Satellite | null {
+    return this.selectSatellite(
+      satellites,
+      this.readRequestedId(route, 'satelliteId')
+    );
+  }
+
+  private readRequestedId(
     route: ActivatedRoute,
     parameterName: 'missionId' | 'satelliteId'
   ): number | null {
@@ -24,23 +44,6 @@ export class MissionSatelliteContextService {
     return Number.isInteger(id) && id > 0
       ? id
       : null;
-  }
-
-  updateQueryParams(
-    router: Router,
-    route: ActivatedRoute,
-    missionId: number | null,
-    satelliteId: number | null
-  ): void {
-    void router.navigate([], {
-      relativeTo: route,
-      queryParams: {
-        missionId,
-        satelliteId
-      },
-      queryParamsHandling: 'merge',
-      replaceUrl: true
-    });
   }
 
   sortMissions(missions: Mission[]): Mission[] {

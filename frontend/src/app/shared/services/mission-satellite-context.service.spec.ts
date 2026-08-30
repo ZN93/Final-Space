@@ -2,7 +2,6 @@
 import {
   ActivatedRoute,
   Params,
-  Router,
   convertToParamMap
 } from '@angular/router';
 import { Mission } from '../../missions/models/mission.model';
@@ -51,72 +50,68 @@ describe('MissionSatelliteContextService', () => {
     expect(service).toBeTruthy();
   });
 
-  it('should read a positive integer selection from query parameters', () => {
+  it('should select the mission requested in query parameters', () => {
     const route = createRoute({ missionId: '42' });
+    const missions = [
+      createMission(1, 'Mission A', 'ACTIVE'),
+      createMission(42, 'Mission B', 'CLOTUREE')
+    ];
 
-    expect(service.readRequestedId(route, 'missionId'))
-      .toBe(42);
+    expect(
+      service.selectMissionFromRoute(route, missions)?.id
+    ).toBe(42);
   });
 
-  it('should ignore an absent or empty selection query parameter', () => {
-    expect(
-      service.readRequestedId(createRoute({}), 'missionId')
-    ).toBeNull();
+  it('should ignore invalid mission identifiers from query parameters', () => {
+    const missions = [
+      createMission(1, 'Mission A', 'CLOTUREE'),
+      createMission(2, 'Mission B', 'ACTIVE')
+    ];
 
-    expect(
-      service.readRequestedId(
-        createRoute({ satelliteId: '  ' }),
-        'satelliteId'
-      )
-    ).toBeNull();
-  });
+    const invalidValues = [
+      '',
+      'invalid',
+      '1.5',
+      '0'
+    ];
 
-  it('should ignore invalid selection identifiers', () => {
-    expect(
-      service.readRequestedId(
-        createRoute({ missionId: 'invalid' }),
-        'missionId'
-      )
-    ).toBeNull();
-
-    expect(
-      service.readRequestedId(
-        createRoute({ missionId: '1.5' }),
-        'missionId'
-      )
-    ).toBeNull();
-
-    expect(
-      service.readRequestedId(
-        createRoute({ missionId: '0' }),
-        'missionId'
-      )
-    ).toBeNull();
-  });
-
-  it('should update mission and satellite query parameters', () => {
-    const router = jasmine.createSpyObj<Router>(
-      'Router',
-      ['navigate']
-    );
-    const route = createRoute({ existing: 'value' });
-
-    service.updateQueryParams(
-      router,
-      route,
-      4,
-      8
-    );
-
-    expect(router.navigate).toHaveBeenCalledWith([], {
-      relativeTo: route,
-      queryParams: {
-        missionId: 4,
-        satelliteId: 8
-      },
-      queryParamsHandling: 'merge',
-      replaceUrl: true
+    invalidValues.forEach(missionId => {
+      expect(
+        service.selectMissionFromRoute(
+          createRoute({ missionId }),
+          missions
+        )?.id
+      ).toBe(2);
     });
+  });
+
+  it('should select the active mission when the query parameter is absent', () => {
+    const missions = [
+      createMission(1, 'Mission A', 'CLOTUREE'),
+      createMission(2, 'Mission B', 'ACTIVE')
+    ];
+
+    expect(
+      service.selectMissionFromRoute(
+        createRoute({}),
+        missions
+      )?.id
+    ).toBe(2);
+  });
+
+  it('should select the satellite requested in query parameters', () => {
+    const route = createRoute({ satelliteId: '8' });
+    const satellites = [
+      createSatellite(4, 'Satellite A', 'ACTIF'),
+      createSatellite(8, 'Satellite B', 'INACTIF')
+    ];
+
+    expect(
+      service.selectSatelliteFromRoute(
+        route,
+        satellites
+      )?.id
+    ).toBe(8);
   });
 
   it('should sort missions by name without modifying the source array', () => {

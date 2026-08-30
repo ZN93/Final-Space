@@ -670,12 +670,9 @@ export class TelemetryPageComponent implements OnInit {
   }
 
   private initializeMissionSelection(): void {
-    const mission = this.contextService.selectMission(
-      this.missions,
-      this.contextService.readRequestedId(
-        this.route,
-        'missionId'
-      )
+    const mission = this.contextService.selectMissionFromRoute(
+      this.route,
+      this.missions
     );
 
     this.selectedMissionId = mission?.id ?? null;
@@ -686,12 +683,9 @@ export class TelemetryPageComponent implements OnInit {
   }
 
   private initializeSatelliteSelection(): void {
-    const satellite = this.contextService.selectSatellite(
-      this.satellites,
-      this.contextService.readRequestedId(
-        this.route,
-        'satelliteId'
-      )
+    const satellite = this.contextService.selectSatelliteFromRoute(
+      this.route,
+      this.satellites
     );
 
     if (!satellite) {
@@ -733,12 +727,15 @@ export class TelemetryPageComponent implements OnInit {
     missionId: number | null,
     satelliteId: number | null
   ): void {
-    this.contextService.updateQueryParams(
-      this.router,
-      this.route,
-      missionId,
-      satelliteId
-    );
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {
+        missionId,
+        satelliteId
+      },
+      queryParamsHandling: 'merge',
+      replaceUrl: true
+    });
   }
 
   private buildChartSeries(
