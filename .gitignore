@@ -23,6 +23,7 @@ backend/target/
 
 # Backups
 backups/
+.deploy/
 
 # Logs
 *.log

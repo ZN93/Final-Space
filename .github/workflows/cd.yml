@@ -1,0 +1,235 @@
+name: CD - Production
+
+on:
+  workflow_run:
+    workflows:
+      - TI - Docker Compose Integration Tests
+    types:
+      - completed
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cd-production
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Select immutable revision
+    runs-on: ubuntu-latest
+    outputs:
+      deploy: ${{ steps.revision.outputs.deploy }}
+      publish: ${{ steps.revision.outputs.publish }}
+      revision: ${{ steps.revision.outputs.revision }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Validate deployment assets
+        run: |
+          set -euo pipefail
+
+          bash -n deploy/deploy-production.sh
+          cp .env.example .env
+
+          BACKEND_IMAGE=ghcr.io/zn93/final-space-backend:validation \
+          FRONTEND_IMAGE=ghcr.io/zn93/final-space-frontend:validation \
+            docker compose \
+              --file docker-compose.yml \
+              --file docker-compose.prod.yml \
+              config \
+              --quiet
+
+          rm -f .env
+
+      - name: Validate deployment source
+        id: revision
+        env:
+          EVENT_REVISION: ${{ github.event.workflow_run.head_sha }}
+          UPSTREAM_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          UPSTREAM_EVENT: ${{ github.event.workflow_run.event }}
+          UPSTREAM_BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          set -euo pipefail
+
+          revision="${EVENT_REVISION}"
+          publish=false
+          deploy=false
+
+          if [[ ! "${revision}" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Invalid Git revision: ${revision}" >&2
+            exit 1
+          fi
+
+          if [ "${UPSTREAM_CONCLUSION}" = "success" ] \
+            && [ "${UPSTREAM_EVENT}" = "push" ] \
+            && [ "${UPSTREAM_BRANCH}" = "main" ]; then
+            git fetch --quiet origin main
+            current_main_revision="$(git rev-parse origin/main)"
+
+            if [ "${revision}" = "${current_main_revision}" ]; then
+              publish=true
+              deploy=true
+            else
+              echo "Skipping stale revision ${revision}; main is ${current_main_revision}"
+            fi
+          else
+            echo "Upstream workflow is not a successful main push"
+          fi
+
+          {
+            echo "revision=${revision}"
+            echo "publish=${publish}"
+            echo "deploy=${deploy}"
+          } >> "${GITHUB_OUTPUT}"
+
+  publish-images:
+    name: Publish ${{ matrix.service }} image
+    needs:
+      - prepare
+    if: needs.prepare.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: backend
+            context: ./backend
+            image: ghcr.io/zn93/final-space-backend
+          - service: frontend
+            context: ./frontend
+            image: ghcr.io/zn93/final-space-frontend
+
+    steps:
+      - name: Checkout immutable revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.revision }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Authenticate to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Build and publish immutable image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          platforms: linux/amd64
+          push: true
+          tags: ${{ matrix.image }}:${{ needs.prepare.outputs.revision }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ needs.prepare.outputs.revision }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+          provenance: mode=max
+          sbom: true
+
+  deploy-production:
+    name: Deploy immutable revision
+    needs:
+      - prepare
+      - publish-images
+    if: needs.prepare.outputs.deploy == 'true' && needs.publish-images.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: production
+      url: ${{ vars.APP_BASE_URL }}
+
+    steps:
+      - name: Validate production configuration
+        env:
+          APP_BASE_URL: ${{ vars.APP_BASE_URL }}
+          VPS_HOST: ${{ vars.VPS_HOST }}
+          VPS_PORT: ${{ vars.VPS_PORT }}
+          VPS_USER: ${{ vars.VPS_USER }}
+        run: |
+          set -euo pipefail
+
+          test -n "${APP_BASE_URL}"
+          test -n "${VPS_HOST}"
+          test -n "${VPS_PORT}"
+          test -n "${VPS_USER}"
+          [[ "${VPS_PORT}" =~ ^[0-9]+$ ]]
+
+      - name: Configure restricted SSH identity
+        env:
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+          VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+
+          install -d -m 0700 "${HOME}/.ssh"
+          printf '%s\n' "${VPS_SSH_PRIVATE_KEY}" > "${HOME}/.ssh/final_space_cd"
+          printf '%s\n' "${VPS_KNOWN_HOSTS}" > "${HOME}/.ssh/known_hosts"
+          chmod 0600 \
+            "${HOME}/.ssh/final_space_cd" \
+            "${HOME}/.ssh/known_hosts"
+
+          ssh-keygen \
+            -F "${{ vars.VPS_HOST }}" \
+            -f "${HOME}/.ssh/known_hosts" \
+            >/dev/null
+
+      - name: Deploy through forced SSH command
+        env:
+          DEPLOY_REVISION: ${{ needs.prepare.outputs.revision }}
+          VPS_HOST: ${{ vars.VPS_HOST }}
+          VPS_PORT: ${{ vars.VPS_PORT }}
+          VPS_USER: ${{ vars.VPS_USER }}
+        run: |
+          set -euo pipefail
+
+          ssh \
+            -p "${VPS_PORT}" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="${HOME}/.ssh/known_hosts" \
+            -i "${HOME}/.ssh/final_space_cd" \
+            "${VPS_USER}@${VPS_HOST}" \
+            "deploy ${DEPLOY_REVISION}"
+
+      - name: Verify public HTTPS health
+        env:
+          APP_BASE_URL: ${{ vars.APP_BASE_URL }}
+        run: |
+          set -euo pipefail
+
+          for attempt in {1..30}; do
+            if response="$(curl --fail --silent --show-error "${APP_BASE_URL}/health")" \
+              && [ "${response}" = "ok" ]; then
+              echo "Production health check passed"
+              exit 0
+            fi
+
+            echo "Waiting for production health check (${attempt}/30)"
+            sleep 2
+          done
+
+          echo "Production health check failed" >&2
+          exit 1
+
+      - name: Remove SSH material
+        if: always()
+        run: |
+          rm -f \
+            "${HOME}/.ssh/final_space_cd" \
+            "${HOME}/.ssh/known_hosts"
