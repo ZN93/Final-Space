@@ -11,8 +11,8 @@ import {
   MissionSatelliteSelectorComponent
 } from '../../shared/mission-satellite-selector/mission-satellite-selector.component';
 import {
-  MissionSatelliteContextPage
-} from '../../shared/services/mission-satellite-context-page';
+  SimulationPresentationPage
+} from '../../shared/utils/simulation-presentation';
 import {
   SimulationListItemResponse,
   SimulationType
@@ -35,7 +35,7 @@ type ExportFormat = 'csv' | 'pdf';
   styleUrl: './report-page.component.css'
 })
 export class ReportPageComponent
-  extends MissionSatelliteContextPage
+  extends SimulationPresentationPage
   implements OnInit {
 
   private readonly missionService = inject(MissionService);
@@ -509,75 +509,11 @@ export class ReportPageComponent
       : 'Transfert de Hohmann';
   }
 
-  getSimulationSummary(
-    simulation: SimulationListItemResponse
-  ): string {
-    if (simulation.type === 'HOHMANN') {
-      const deltaV =
-        simulation.deltaVTotalMS === null
-          ? 'Non disponible'
-          : `${simulation.deltaVTotalMS.toLocaleString('fr-FR')} m/s`;
-
-      const duration =
-        simulation.transferTimeMinutes === null
-          ? 'Non disponible'
-          : `${simulation.transferTimeMinutes.toLocaleString('fr-FR')} min`;
-
-      return `Δv total : ${deltaV} · Durée : ${duration}`;
-    }
-
-    const period =
-      simulation.orbitalPeriodMinutes === null
-        ? 'Non disponible'
-        : `${simulation.orbitalPeriodMinutes.toLocaleString('fr-FR')} min`;
-
-    const velocity =
-      simulation.averageVelocityKmS === null
-        ? 'Non disponible'
-        : `${simulation.averageVelocityKmS.toLocaleString('fr-FR')} km/s`;
-
-    return `Période : ${period} · Vitesse : ${velocity}`;
-  }
-
-  formatDate(value: string): string {
-    const date = new Date(value);
-
-    if (Number.isNaN(date.getTime())) {
-      return value;
-    }
-
-    return new Intl.DateTimeFormat('fr-FR', {
-      dateStyle: 'medium',
-      timeStyle: 'short'
-    }).format(date);
-  }
-
-  trackByMissionId(
-    index: number,
-    mission: Mission
-  ): number {
-    return mission.id;
-  }
-
-  trackBySatelliteId(
-    index: number,
-    satellite: Satellite
-  ): number {
-    return satellite.id;
-  }
-
   trackByMetric(
     index: number,
     metric: string
   ): string {
     return metric;
-  }
-
-  trackBySimulationId(
-    index: number,
-    simulation: SimulationListItemResponse
-  ): number {
-    return simulation.id;
   }
 
   private toIsoDateOrNull(
