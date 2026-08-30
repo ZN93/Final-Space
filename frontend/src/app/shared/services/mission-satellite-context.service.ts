@@ -7,24 +7,24 @@ import { Satellite } from '../../satellites/models/satellite.model';
   providedIn: 'root'
 })
 export class MissionSatelliteContextService {
-  selectMissionFromRoute(
+  selectMissionIdFromRoute(
     route: ActivatedRoute,
     missions: Mission[]
-  ): Mission | null {
+  ): number | null {
     return this.selectMission(
       missions,
       this.readRequestedId(route, 'missionId')
-    );
+    )?.id ?? null;
   }
 
-  selectSatelliteFromRoute(
+  selectSatelliteIdFromRoute(
     route: ActivatedRoute,
     satellites: Satellite[]
-  ): Satellite | null {
+  ): number | null {
     return this.selectSatellite(
       satellites,
       this.readRequestedId(route, 'satelliteId')
-    );
+    )?.id ?? null;
   }
 
   private readRequestedId(

@@ -58,7 +58,7 @@ describe('MissionSatelliteContextService', () => {
     ];
 
     expect(
-      service.selectMissionFromRoute(route, missions)?.id
+      service.selectMissionIdFromRoute(route, missions)
     ).toBe(42);
   });
 
@@ -77,10 +77,10 @@ describe('MissionSatelliteContextService', () => {
 
     invalidValues.forEach(missionId => {
       expect(
-        service.selectMissionFromRoute(
+        service.selectMissionIdFromRoute(
           createRoute({ missionId }),
           missions
-        )?.id
+        )
       ).toBe(2);
     });
   });
@@ -92,10 +92,10 @@ describe('MissionSatelliteContextService', () => {
     ];
 
     expect(
-      service.selectMissionFromRoute(
+      service.selectMissionIdFromRoute(
         createRoute({}),
         missions
-      )?.id
+      )
     ).toBe(2);
   });
 
@@ -107,10 +107,10 @@ describe('MissionSatelliteContextService', () => {
     ];
 
     expect(
-      service.selectSatelliteFromRoute(
+      service.selectSatelliteIdFromRoute(
         route,
         satellites
-      )?.id
+      )
     ).toBe(8);
   });
 

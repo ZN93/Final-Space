@@ -431,44 +431,35 @@ export class SimulationListPageComponent implements OnInit {
   }
 
   private initializeMissionSelection(): void {
-    const mission = this.contextService.selectMissionFromRoute(
-      this.route,
-      this.missions
-    );
+    this.selectedMissionId =
+      this.contextService.selectMissionIdFromRoute(
+        this.route,
+        this.missions
+      );
 
-    this.selectedMissionId = mission?.id ?? null;
-
-    if (mission) {
-      this.loadSatellites(mission.id);
+    if (this.selectedMissionId) {
+      this.loadSatellites(this.selectedMissionId);
     }
   }
 
   private initializeSatelliteSelection(): void {
-    const satellite = this.contextService.selectSatelliteFromRoute(
-      this.route,
-      this.satellites
-    );
-
-    if (!satellite) {
-      this.selectedSatelliteId = null;
-      this.simulations = [];
-
-      this.updateQueryParams(
-        this.selectedMissionId,
-        null
+    this.selectedSatelliteId =
+      this.contextService.selectSatelliteIdFromRoute(
+        this.route,
+        this.satellites
       );
-
-      return;
-    }
-
-    this.selectedSatelliteId = satellite.id;
 
     this.updateQueryParams(
       this.selectedMissionId,
-      satellite.id
+      this.selectedSatelliteId
     );
 
-    this.loadSimulations(satellite.id);
+    if (!this.selectedSatelliteId) {
+      this.simulations = [];
+      return;
+    }
+
+    this.loadSimulations(this.selectedSatelliteId);
   }
 
   private updateQueryParams(
