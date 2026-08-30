@@ -11,12 +11,7 @@ import {
   MissionSatelliteSelectorComponent
 } from '../../shared/mission-satellite-selector/mission-satellite-selector.component';
 import {
-  MissionSatelliteContextPage
-} from '../../shared/services/mission-satellite-context-page';
-import {
-  formatShortDateTime,
-  formatSimulationSummary,
-  trackByNumericId
+  SimulationPresentationPage
 } from '../../shared/utils/simulation-presentation';
 import {
   SimulationListItemResponse,
@@ -40,7 +35,7 @@ type ExportFormat = 'csv' | 'pdf';
   styleUrl: './report-page.component.css'
 })
 export class ReportPageComponent
-  extends MissionSatelliteContextPage
+  extends SimulationPresentationPage
   implements OnInit {
 
   private readonly missionService = inject(MissionService);
@@ -75,12 +70,6 @@ export class ReportPageComponent
 
   errorMessage = '';
   successMessage = '';
-
-  readonly getSimulationSummary = formatSimulationSummary;
-  readonly formatDate = formatShortDateTime;
-  readonly trackByMissionId = trackByNumericId;
-  readonly trackBySatelliteId = trackByNumericId;
-  readonly trackBySimulationId = trackByNumericId;
 
   ngOnInit(): void {
     this.loadMissions();

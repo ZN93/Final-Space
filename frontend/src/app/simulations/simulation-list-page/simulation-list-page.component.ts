@@ -12,12 +12,7 @@ import {
   MissionSatelliteSelectorComponent
 } from '../../shared/mission-satellite-selector/mission-satellite-selector.component';
 import {
-  MissionSatelliteContextPage
-} from '../../shared/services/mission-satellite-context-page';
-import {
-  formatShortDateTime,
-  formatSimulationSummary,
-  trackByNumericId
+  SimulationPresentationPage
 } from '../../shared/utils/simulation-presentation';
 import {
   SimulationListItemResponse,
@@ -43,7 +38,7 @@ type SimulationStatusFilter = 'ALL' | SimulationStatus;
   styleUrl: './simulation-list-page.component.css'
 })
 export class SimulationListPageComponent
-  extends MissionSatelliteContextPage
+  extends SimulationPresentationPage
   implements OnInit {
 
   private readonly missionService = inject(MissionService);
@@ -75,12 +70,6 @@ export class SimulationListPageComponent
 
   errorMessage = '';
   successMessage = '';
-
-  readonly getSimulationSummary = formatSimulationSummary;
-  readonly formatDate = formatShortDateTime;
-  readonly trackByMissionId = trackByNumericId;
-  readonly trackBySatelliteId = trackByNumericId;
-  readonly trackBySimulationId = trackByNumericId;
 
   ngOnInit(): void {
     this.loadMissions();

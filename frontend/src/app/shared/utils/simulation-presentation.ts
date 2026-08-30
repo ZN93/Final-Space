@@ -1,6 +1,9 @@
 import {
   SimulationListItemResponse
 } from '../../simulations/models/simulation.model';
+import {
+  MissionSatelliteContextPage
+} from '../services/mission-satellite-context-page';
 
 export function formatSimulationSummary(
   simulation: SimulationListItemResponse
@@ -50,4 +53,14 @@ export function trackByNumericId(
   item: { id: number }
 ): number {
   return item.id;
+}
+
+export abstract class SimulationPresentationPage
+  extends MissionSatelliteContextPage {
+
+  readonly getSimulationSummary = formatSimulationSummary;
+  readonly formatDate = formatShortDateTime;
+  readonly trackByMissionId = trackByNumericId;
+  readonly trackBySatelliteId = trackByNumericId;
+  readonly trackBySimulationId = trackByNumericId;
 }
